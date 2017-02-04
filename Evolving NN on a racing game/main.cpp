@@ -17,7 +17,7 @@ int main()
 
 
 	Clock deltaTime;
-	float dt = 0.000001;
+	float dt = 0.000001f;
 	
 	while (rWind.isOpen())
 	{

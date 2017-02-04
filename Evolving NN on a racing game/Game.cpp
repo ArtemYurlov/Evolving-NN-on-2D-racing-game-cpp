@@ -88,4 +88,9 @@ void Game::clearCars()
 	m_cars.clear();
 }
 
+sf::RenderWindow* Game::getRenderWindow() const
+{
+	return m_rWnd;
+}
+
 

@@ -28,6 +28,8 @@ public:
 	vector<Car*> getCars() const;
 	void clearCars();
 
+	sf::RenderWindow* getRenderWindow() const;
+
 
 
 private:
