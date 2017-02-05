@@ -15,19 +15,22 @@ public:
 	~Level();
 
 	//Methods
-	bool LoadLevel(const Game* game);
+	bool LoadLevel(Game* game);
 	bool isValid() const;
 
-	void Draw();
+	void Draw() const;
 
 	//get/set
-	sf::Vector2f getSpawnPos();
+	sf::Vector2f getSpawnPos() const;
 	
-	float getSpawnAng();
+	vector<t_line> getWalls();
+
+	float getSpawnAng() const;
 
 private:
 	//void buildCheckpoints();
-
+	
+	Game* game;
 
 	sf::Vector2f m_spawnPos;
 	float m_spawnAng;

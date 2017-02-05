@@ -9,7 +9,7 @@ using namespace sf;
 int main()
 {
 	
-	RenderWindow rWind(VideoMode(1000, 1000), "Racing game");
+	RenderWindow rWind(VideoMode(960, 1377), "Racing game", sf::Style::Titlebar | sf::Style::Close);
 
 	Game game;
 	if (!game.Init(&rWind))

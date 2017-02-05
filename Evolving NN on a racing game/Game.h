@@ -35,8 +35,9 @@ public:
 private:
 	Level m_level;
 	vector<Car*> m_cars;
+	vector<t_line> m_walls;
 
 	sf::RenderWindow* m_rWnd;
-	
+	sf::Vector2f m_camPos;
 };
 
