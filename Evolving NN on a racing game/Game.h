@@ -23,6 +23,8 @@ public:
 	void setLevel(const Level &level);
 	Level getLevel() const;
 
+	vector<t_line> getCPs() const;
+
 	void addCar(Car* car);
 	void setCars(const vector<Car*> &cars);
 	vector<Car*> getCars() const;
@@ -36,6 +38,7 @@ private:
 	Level m_level;
 	vector<Car*> m_cars;
 	vector<t_line> m_walls;
+	vector<t_line> m_cps; // check points
 
 	sf::RenderWindow* m_rWnd;
 	sf::Vector2f m_camPos;

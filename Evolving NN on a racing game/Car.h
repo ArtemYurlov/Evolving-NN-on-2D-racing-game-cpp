@@ -24,7 +24,12 @@ public:
 	sf::Vector2f getPos() const;
 	sf::Vector2f getDirectionFacing() const;
 	vector<t_line> getEdges() const;
+	vector<sf::Vector2f> getVertices() const;
+
 	bool isAlive() const;
+	bool isPlayer() const;
+	void addScore(); //increase score
+	unsigned getScore() const ; 
 	
 
 protected:
@@ -40,11 +45,16 @@ protected:
 	sf::Vector2f m_vel;
 	float m_speed;
 	float m_maxAcc; //maximum acceleration of the car
+	sf::Vector2f m_acc; //acceleration vector
 	float m_fric; //friction, the coefficient of speed the car will slowdown with every tick
 	float m_turnCoef; //the sharpnes of a turn coeff
 
-	int m_acc; //is car accelerating [1 - forward 0 - no -1 - back]
+	int m_bAcc; //is car accelerating [1 - forward 0 - no -1 - back]
 	int m_turn; //is car turning [-1 - left 0 - no 1 - right]
+
+	bool m_isPlayer;
+	unsigned m_score; //score of a car
+	vector<t_line> m_checkPointsLeft; //checkpoints left to score for the car
 
 	bool m_alive; // is the car alive
 	float m_reviveIn; // when to revive after the crash, set negative to disable

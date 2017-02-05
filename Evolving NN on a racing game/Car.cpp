@@ -2,8 +2,8 @@
 #include "Utils.h"
 #include "Game.h"
 #include <SFML/OpenGL.hpp>
-
 #include <iostream>
+
 
 Car::Car()
 {
@@ -14,16 +14,18 @@ Car::Car()
 	m_turn = 0;
 	m_ang = 0.f;
 	m_speed = 0.f;
-	m_acc = 0.f;
+	m_bAcc = 0.f;
 	// physics constants
-	m_maxAcc = 330.f; //max acceleration of the car
-	m_fric = 0.0015f; //friction coeff
+	m_maxAcc = 450.f; //max acceleration of the car
+	m_fric = 0.0012f; //friction coeff
 	m_turnCoef = 0.0075f; //sharpnes of the turn coeff
 	
+	m_isPlayer = false;
 
 	m_timeDead = 0.f;
 	m_reviveIn = -1.f; // negative => do not revive
 	m_alive = false;
+	m_score = 0u;
 }
 
 bool Car::Init( Game* game, const sf::Vector2f& spawnPos, const float& spawnAng)
@@ -32,7 +34,7 @@ bool Car::Init( Game* game, const sf::Vector2f& spawnPos, const float& spawnAng)
 	m_sp_pos = spawnPos;
 	m_sp_ang = spawnAng;
 
-	this->Revive();
+	this->Revive(); // updates the car box and draws
 
 	return true;
 }
@@ -62,16 +64,22 @@ void Car::Revive()
 	m_vel = sf::Vector2f(0.f, 0.f);
 	m_speed = 0;
 
-	updateCarBox(); // update the position of the cars box
+	m_score = 0u;
+	m_checkPointsLeft = game->getCPs(); // update checkpoints
 
 	m_alive = true;
 	
 	m_timeDead = 0.f;
+
+	updateCarBox(); // update the position of the cars box
+	this->Draw();
+	cout << "Revived! " << endl;
 }
 
 
 PlayerCar::PlayerCar():Car()
 {
+	m_isPlayer = true;
 	m_reviveIn = 1.f; //revive the car 1 second after the crash
 }
 
@@ -103,15 +111,36 @@ vector<t_line> Car::getEdges() const
 	return edges;
 }
 
+vector<sf::Vector2f> Car::getVertices() const
+{
+	return m_vertices;
+}
+
 bool Car::isAlive() const
 {
 	return m_alive;
 }
 
+bool Car::isPlayer() const
+{
+	return m_isPlayer;
+}
+
+void Car::addScore()
+{
+	m_score++;
+	cout << "Score " << m_score << endl;
+}
+
+unsigned Car::getScore() const
+{
+	return m_score;
+}
+
 
 void Car::EventClear()
 {
-	m_acc = 0;
+	m_bAcc = 0;
 	m_turn = 0;
 }
 
@@ -136,9 +165,9 @@ m_vertices = vertices;
 void PlayerCar::EventHandle()
 {
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-		m_acc = 1;
+		m_bAcc = 1;
 	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-		m_acc = -1;
+		m_bAcc = -1;
 
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::A))
 		m_turn = -1;
@@ -153,11 +182,12 @@ void Car::Update(float dt)
 
 	if (!m_alive) //dont let to update if dead
 	{
-		if (m_reviveIn >= 0 && m_timeDead > m_reviveIn) //if revive is possible wait for the revive
-			this->Revive();
-
-		m_timeDead += dt;
-		return;
+		if (m_reviveIn <= 0 || m_timeDead < m_reviveIn) //if we shuld remain dead
+		{
+			m_timeDead += dt;
+			return;
+		}
+		this->Revive(); //otherwise revive
 	}
 
 	// update facing angle
@@ -171,13 +201,24 @@ void Car::Update(float dt)
 	// update position
 	sf::Vector2f prevPos = m_pos;
 		// x(t+dt) = x(t) + v(t)*dt + 0.5*a(t)*dt*dt
-	m_pos = m_pos + dir * (m_speed - m_fric*m_speed) * dt
-		+ dir * 0.5f * float(m_acc)*m_maxAcc*pow(dt,1.8f); // dt^1.8 and not 2 is to make the car more reactive
+	m_acc = dir * float(m_bAcc)*m_maxAcc;
+	m_pos = m_pos + dir * m_speed * dt
+		+ 0.5f * m_acc * dt * dt;
 
-	m_vel = (m_pos - prevPos) / dt; //update velocity and speed
+	m_vel += m_acc * dt; //update velocity and speed
+	m_vel += -m_fric * m_vel; // add friction
 	m_speed = Norm(m_vel)*sgn(Dot(m_vel, dir)); //signed speed
 
 	updateCarBox();
+
+	//update score
+	for (unsigned i = 0; i < m_checkPointsLeft.size(); ++i)
+		if (CollisionDidPointCrossSeg(prevPos, m_pos, m_checkPointsLeft[i].p1, m_checkPointsLeft[i].p2))
+		{
+			this->addScore();
+			m_checkPointsLeft.erase(m_checkPointsLeft.begin() + i);
+		}
+		
 
 	this->EventClear();
 }

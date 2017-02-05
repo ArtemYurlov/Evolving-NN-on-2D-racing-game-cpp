@@ -15,11 +15,12 @@ bool Game::Init(sf::RenderWindow* rWnd )
 
 	//Load a level
 	Level level;
-	if (!level.LoadLevel(this))
+	if (!level.Init(this))
 		return false;
 
 	m_level = level;
 	m_walls = m_level.getWalls(); //for future collision detection
+	m_cps = m_level.getCPs();
 	
 	//Create a car
 	Car* pCar = new PlayerCar;
@@ -40,9 +41,13 @@ void Game::EventHandle()
 void Game::Update(float dt)
 {
 	for (auto &car : m_cars)
-	{
+	{		
+		// update car
+		car->Update(dt);
+
 		// collision update
 		vector<t_line> edges = car->getEdges();
+
 		for (auto &wall : m_walls)
 			for (auto &edge : edges)
 			{
@@ -50,8 +55,6 @@ void Game::Update(float dt)
 					car->Kill();
 			}
 
-		// update car
-		car->Update(dt);
 	}
 }
 
@@ -72,7 +75,7 @@ void Game::Render()
 
 	unsigned i = 0;
 	for (; i < m_cars.size(); ++i)
-		if (m_cars[i]->isAlive())
+		if (m_cars[i]->isAlive() || m_cars[i]->isPlayer())
 			break;
 
 	if (i < m_cars.size())
@@ -99,6 +102,11 @@ void Game::setLevel(const Level& level)
 Level Game::getLevel() const
 {
 	return m_level;
+}
+
+vector<t_line> Game::getCPs() const
+{
+	return m_cps;
 }
 
 void Game::addCar(Car* car)

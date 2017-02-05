@@ -8,9 +8,21 @@ using namespace std;
 
 struct t_line
 {
+	t_line() { p1 = sf::Vector2f(); p2 = sf::Vector2f(); }
+	t_line(const sf::Vector2f &p1, const sf::Vector2f &p2) { this->p1 = p1; this->p2 = p2; }
 	sf::Vector2f p1;
 	sf::Vector2f p2;
 };
+
+struct t_cpWidth //struct of a checkpoint with width of the track around it
+{
+	t_cpWidth() { this->cp = sf::Vector2f(0.f, 0.f); this->width = 0.f; this->numCp = 0; };
+	t_cpWidth(const sf::Vector2f &cp, const float width, const unsigned numCp) { this->cp = cp; this->width = width; this->numCp = numCp; }
+	sf::Vector2f cp;
+	float width;
+	unsigned numCp;
+};
+
 
 inline void drawLine(sf::RenderWindow* rWnd, const sf::Vector2f &p1, const sf::Vector2f &p2, const sf::Color &color1 = sf::Color::White, const sf::Color &color2 = sf::Color::White)
 {
@@ -94,6 +106,16 @@ inline float Norm (const sf::Vector2f &vec)
 	return sqrt(pow(vec.x, 2) + pow(vec.y, 2));
 }
 
+inline sf::Vector2f Normalize(const sf::Vector2f &vec)
+{
+	return vec / Norm(vec);
+}
+
+inline sf::Vector2f Perp(const sf::Vector2f &vec)
+{
+	return sf::Vector2f(vec.y, -1.f * vec.x);
+}
+
 inline float Dot(const sf::Vector2f &v1, const sf::Vector2f &v2)
 {
 	return (v1.x*v2.x) + (v1.y*v2.y);
@@ -140,6 +162,28 @@ inline sf::Vector2f CollisionSeqSeq(const sf::Vector2f lineA1, const sf::Vector2
 		return lineA1 + t * r;
 	else //otherwise the segments do not intersect 
 		return sf::Vector2f(0.f, 0.f); 
+}
+
+inline float Orient2D (const sf::Vector2f &point, const sf::Vector2f &line_a, const sf::Vector2f &line_b)
+{
+	// >0 => AB_Point triangle is oriented counterclockwise
+	return (line_a.x - point.x) * (line_b.y - point.y) - (line_b.x - point.x) * (line_a.y - point.y);
+}
+
+inline bool CollisionDidPointCrossSeg(const sf::Vector2f &startPos, const sf::Vector2f &endPos, const sf::Vector2f lineA1, const sf::Vector2f lineA2)
+{
+	if (Orient2D(startPos, lineA1, lineA2)*Orient2D(endPos, lineA1, lineA2) < 0)
+		return true; //means the point crossed AB
+
+	return false;
+}
+
+inline bool CollisionDidPointCrossSeg(const sf::Vector2f &startPos, const sf::Vector2f &endPos, const t_line &line)
+{
+	if (Orient2D(startPos, line.p1, line.p2)*Orient2D(endPos, line.p1, line.p2) < 0)
+		return true; //means the point crossed AB
+
+	return false;
 }
 
 inline sf::Vector2f CollisionSeqSeq(const t_line &l1, const t_line &l2)
