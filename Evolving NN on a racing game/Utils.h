@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <iostream>
 
 using namespace std;
 
@@ -14,14 +15,6 @@ struct t_line
 	sf::Vector2f p2;
 };
 
-struct t_cpWidth //struct of a checkpoint with width of the track around it
-{
-	t_cpWidth() { this->cp = sf::Vector2f(0.f, 0.f); this->width = 0.f; this->numCp = 0; };
-	t_cpWidth(const sf::Vector2f &cp, const float width, const unsigned numCp) { this->cp = cp; this->width = width; this->numCp = numCp; }
-	sf::Vector2f cp;
-	float width;
-	unsigned numCp;
-};
 
 
 inline void drawLine(sf::RenderWindow* rWnd, const sf::Vector2f &p1, const sf::Vector2f &p2, const sf::Color &color1 = sf::Color::White, const sf::Color &color2 = sf::Color::White)
@@ -75,6 +68,9 @@ inline void drawConnected(sf::RenderWindow* rWnd, const vector<sf::Vector2f> &ve
 	vector<sf::Vertex> vertices_l; // vertecies of lines to be drawn
 	vertices_l.clear();
 
+	if (vertices.size() <= 1)
+		return;
+
 	for (unsigned i = 0; i < vertices.size() - 1; ++i)
 	{
 		vertices_l.push_back(sf::Vertex(vertices[i], color1));
@@ -91,12 +87,14 @@ inline void drawConnected(sf::RenderWindow* rWnd, const vector<sf::Vector2f> &ve
 }
 
 
-inline sf::Vector2f rotateVec2f(const sf::Vector2f &point, const sf::Vector2f &centre, const float angleD)
+inline sf::Vector2f RotateVec2f(const sf::Vector2f &point, const sf::Vector2f &centre, const float angleD)
 {
+	if (angleD == 0.f)
+		return point;
 	sf::Vector2f newPoint;
 
-	newPoint.x = centre.x + (point.x - centre.x) * cosf(angleD*PI / 180.f) + (point.y - centre.y) * sinf(angleD*PI / 180.f);
-	newPoint.y = centre.y + (point.x - centre.x) * sinf(angleD*PI / 180.f) - (point.y - centre.y) * cosf(angleD*PI / 180.f);
+	newPoint.x = centre.x + ((point.x - centre.x) * cosf(angleD*PI / 180.f) - (point.y - centre.y) * sinf(angleD*PI / 180.f));
+	newPoint.y = centre.y + ((point.x - centre.x) * sinf(angleD*PI / 180.f) + (point.y - centre.y) * cosf(angleD*PI / 180.f));
 
 	return newPoint;
 }
@@ -133,6 +131,40 @@ inline float Det(const sf::Vector2f &v1, const sf::Vector2f &v2)
 	return v1.x*v2.y - v1.y*v2.x;
 }
 
+inline float CollisionSeqSeq_getPropL1(const sf::Vector2f lineA1, const sf::Vector2f lineA2, const sf::Vector2f lineB1, const sf::Vector2f lineB2)
+{
+	// returns the proportion up the first line where the collision happens aka returns t, -1.f = no collision
+
+	// let the first like be defined as l1(t) = lineA1 + tr with r:=lineA2 - lineA1 with t in [0,1]
+	// simularly l2(s) = lineB1 + us with s:=lineB2-lineB1, u in [0,1]
+	const sf::Vector2f r = lineA2 - lineA1;
+	const sf::Vector2f s = lineB2 - lineB1;
+	// then u will be u= det((lineB1-lineA1),r)/det(r,s)
+	const sf::Vector2f o = lineB1 - lineA1;
+	const float det1 = Det(o, r);
+	const float det2 = Det(r, s);
+	//Now if det1 == 0 and det2 == 0 then segments are colinear
+	if (det2 == 0)
+	{
+		if (det1 != 0) // segments are parallel and not intersecting
+			return -1.f;
+		else // det1 == 0
+		{
+			const float t0 = Dot(o, r) / Dot(r, r);
+			const float t1 = Dot(o + s, r) / Dot(r, r); //= t0+s.r/r.r
+			
+			if (t0 <= 1.f && t0 >= 0.f && t1 <= 1.f && t1 > 0.f) // then segments overlap
+				return t0;
+		}
+	}
+	const float t = Det(o, s) / det2;
+	const float u = Det(o, r) / det2;
+	if (t <= 1.f && t >= 0.f && u <= 1.f && u > 0.f) // then segments intesect
+		return t;
+	else //otherwise the segments do not intersect 
+		return -1.f;
+}
+
 inline sf::Vector2f CollisionSeqSeq(const sf::Vector2f lineA1, const sf::Vector2f lineA2, const sf::Vector2f lineB1, const sf::Vector2f lineB2)
 {
 	// let the first like be defined as l1(t) = lineA1 + tr with r:=lineA2 - lineA1 with t in [0,1]
@@ -156,8 +188,8 @@ inline sf::Vector2f CollisionSeqSeq(const sf::Vector2f lineA1, const sf::Vector2
 				return lineB1;
 		}
 	}
-	const float t = Det(o, s) / Det(r, s);
-	const float u = Det(o, r) / Det(r, s);
+	const float t = Det(o, s) / det2;
+	const float u = Det(o, r) / det2;
 	if (t <= 1.f && t >= 0.f && u <= 1.f && u > 0.f) // then segments intesect
 		return lineA1 + t * r;
 	else //otherwise the segments do not intersect 

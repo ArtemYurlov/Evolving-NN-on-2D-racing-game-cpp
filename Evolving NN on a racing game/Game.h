@@ -24,6 +24,7 @@ public:
 	Level getLevel() const;
 
 	vector<t_line> getCPs() const;
+	vector<t_line> getWalls() const;
 
 	void addCar(Car* car);
 	void setCars(const vector<Car*> &cars);

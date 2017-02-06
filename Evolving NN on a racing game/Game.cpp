@@ -23,7 +23,7 @@ bool Game::Init(sf::RenderWindow* rWnd )
 	m_cps = m_level.getCPs();
 	
 	//Create a car
-	Car* pCar = new PlayerCar;
+	Car* pCar = new AICar;
 	if (!pCar->Init(this, level.getSpawnPos(), level.getSpawnAng()))
 		return false;
 
@@ -107,6 +107,11 @@ Level Game::getLevel() const
 vector<t_line> Game::getCPs() const
 {
 	return m_cps;
+}
+
+vector<t_line> Game::getWalls() const
+{
+	return m_walls;
 }
 
 void Game::addCar(Car* car)

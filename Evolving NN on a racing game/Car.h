@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 #include "Utils.h"
+#include <array>
 
 class Game;
 
@@ -12,10 +13,10 @@ public:
 	virtual ~Car() = default;
 
 	// Methods
-	bool Init(Game* game, const sf::Vector2f &spawnPos, const float &spawnAng);
+	virtual bool Init(Game* game, const sf::Vector2f &spawnPos, const float &spawnAng);
 	virtual void EventHandle() = 0;
 	virtual void Update(float dt);
-	void Draw() const;
+	virtual void Draw() const;
 
 	void Kill();
 	void Revive();
@@ -36,6 +37,9 @@ protected:
 	void EventClear(); // clear the events after the eventHandle
 	void updateCarBox(); // update the position of the cars box based on the cars position
 
+	float mm_h; //size of the car
+	float mm_w;
+
 	sf::Vector2f m_sp_pos;
 	float m_sp_ang;
 
@@ -54,6 +58,7 @@ protected:
 
 	bool m_isPlayer;
 	unsigned m_score; //score of a car
+	vector<sf::Vector2f> m_trail;
 	vector<t_line> m_checkPointsLeft; //checkpoints left to score for the car
 
 	bool m_alive; // is the car alive
@@ -75,3 +80,28 @@ private:
 
 };
 
+class AICar : public Car
+{
+public:
+	struct t_sensor
+	{
+		t_sensor() { this->line = t_line(); value = 0.f; }
+		t_sensor(const t_line line, const float value) { this->line = line; this->value = value; }
+		t_line line;
+		float value;
+	};
+
+public:
+	AICar();
+
+	bool Init(Game* game, const sf::Vector2f &spawnPos, const float &spawnAng) override;
+	void EventHandle() override;
+	void Draw() const override;
+
+
+private:
+	void updateSensors();
+
+	array<t_sensor, 3> m_sensors;
+
+};

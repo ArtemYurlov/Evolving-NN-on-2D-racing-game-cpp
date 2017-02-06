@@ -53,6 +53,7 @@ int main()
 
 		//dt
 		dt = deltaTime.restart().asSeconds();
+		//cout << 1 / dt << endl;
 	}
 
 	game.Quit();

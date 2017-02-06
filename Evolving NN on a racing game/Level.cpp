@@ -29,7 +29,7 @@ bool Level::Init(Game* game)
 
 	m_wall_2.push_back(sf::Vector2f(-100.f, 0.f));
 	m_wall_2.push_back(sf::Vector2f(-100.f, 100.f));
-	m_wall_2.push_back(sf::Vector2f(-200.f, 100.f));*/
+	m_wall_2.push_back(sf::Vector2f(-200.f, 100.f));
 
 	vector<t_cpWidth> cpWs;
 	cpWs.push_back(t_cpWidth(sf::Vector2f(0.f, 0.f), 70.f,1));// spawn line
@@ -39,19 +39,57 @@ bool Level::Init(Game* game)
 	cpWs.push_back(t_cpWidth(sf::Vector2f(-100.f, -700.f), 40.f, 5));
 	cpWs.push_back(t_cpWidth(sf::Vector2f(0.f, -850.f), 50.f, 6));
 
-	LevelFromChechpointWidth(cpWs, sf::Vector2f(-10.f, 0.f));
+	LevelFromChechpointWidth(cpWs, sf::Vector2f(0.f, -1.f));*/
 
-	m_spawnPos = sf::Vector2f(0.f, -40.f);
+	vector<t_angLenWidth> ang_len_widths;
+
+	ang_len_widths.push_back(t_angLenWidth(0.f, 300.f, 100.f, 5));
+
+	ang_len_widths.push_back(t_angLenWidth(-45.f, 100.f, 100.f, 5));
+	ang_len_widths.push_back(t_angLenWidth(-45.f, 400.f, 71.f, 5));
+
+	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 71.f, 5));
+	ang_len_widths.push_back(t_angLenWidth(45.f, 500.f, 71.f * 0.64f, 5));
+
+	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 71.f * 0.64f, 5));
+	ang_len_widths.push_back(t_angLenWidth(45.f, 400.f, 100.f, 5));
+
+
+	LevelFromAngleLengthWidth(ang_len_widths, sf::Vector2f(0.f, 0.f), sf::Vector2f(0.f, -1.f));
+
+
+
+	m_spawnPos = sf::Vector2f(0.f, -600.f);
 	m_spawnAng = -90.f; //facing north
 
 	m_valid = true;
 
 	return true;
 }
-bool Level::LevelFromChechpointWidth(const vector<t_cpWidth> &cpWidths, const sf::Vector2f &leftPoint)
+
+bool Level::LevelFromAngleLengthWidth(const vector<t_angLenWidth>& angLenWidths, const sf::Vector2f &firstPoint, const sf::Vector2f& initDir)
 {
-	sf::Vector2f dir = Normalize(leftPoint - cpWidths[0].cp );
-	m_checkLines.push_back(t_line(cpWidths[0].cp - dir*cpWidths[0].width, cpWidths[0].cp + dir*cpWidths[0].width));
+	vector<t_cpWidth> cpWidths;
+	cpWidths.push_back(t_cpWidth(firstPoint, angLenWidths[0].w, 1)); //initial point
+
+	sf::Vector2f dir; // direction of the current iteration
+	sf::Vector2f prevDir = initDir; // direction of the previous iteration
+	for (unsigned i = 0; i < angLenWidths.size(); ++i)
+	{
+		dir = Normalize( RotateVec2f(prevDir, sf::Vector2f(0.f,0.f), angLenWidths[i].a));
+		cpWidths.push_back(t_cpWidth(cpWidths.back().cp + dir * angLenWidths[i].l
+			, angLenWidths[i].w, angLenWidths[i].numCp));
+		prevDir = dir;
+	}
+
+	return LevelFromChechpointWidth(cpWidths, initDir);
+}
+
+
+bool Level::LevelFromChechpointWidth(const vector<t_cpWidth> &cpWidths, const sf::Vector2f &initDir)
+{
+	sf::Vector2f dir = Normalize(initDir);
+	m_checkLines.push_back(t_line(cpWidths[0].cp - Perp(dir)*cpWidths[0].width, cpWidths[0].cp + Perp(dir)*cpWidths[0].width));
 	for (unsigned i = 1; i < cpWidths.size(); ++i)
 	{
 		dir = Normalize(cpWidths[i].cp - cpWidths[i - 1].cp);
