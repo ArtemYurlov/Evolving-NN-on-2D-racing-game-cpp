@@ -3,6 +3,8 @@
 
 #include "Car.h"
 #include "Level.h"
+#include  "NNet.h"
+#include <memory>
 
 using namespace std;
 
@@ -10,14 +12,14 @@ class Game
 {
 public:
 	Game();
-	~Game();
+	virtual ~Game() {  }
 
 	//Methods
-	bool Init( sf::RenderWindow* rWnd);
-	void EventHandle();
-	void Update(float dt);
-	void Render();
-	void Quit();
+	virtual bool Init( sf::RenderWindow* rWnd);
+	virtual void EventHandle();
+	virtual void Update(float dt);
+	virtual void Render();
+	virtual void Quit();
 
 	//get/set
 	void setLevel(const Level &level);
@@ -35,7 +37,7 @@ public:
 
 
 
-private:
+protected:
 	Level m_level;
 	vector<Car*> m_cars;
 	vector<t_line> m_walls;
@@ -45,3 +47,44 @@ private:
 	sf::Vector2f m_camPos;
 };
 
+
+class Evolution_Controller : public Game
+{
+public:
+	struct t_genome
+	{
+		unsigned id;
+		unsigned index;
+		float fitness;
+		vector<float> weights;
+	};
+
+	Evolution_Controller();
+	bool Init(sf::RenderWindow* rWnd) override;
+	void Update(float dt) override;
+
+	
+	void GenerateRandPopulation();
+
+	void BreedPopulation();
+	void CrossBreed(const t_genome &g1, const t_genome &g2, t_genome &baby1, t_genome &baby2);
+
+	void RateGenome(const unsigned &index, const float &score);
+
+
+
+private:
+	vector<t_genome> getBestGenomes(const unsigned num);
+	static void mutate(t_genome &gen);
+
+	unsigned m_curr_id;
+	unsigned m_generation;
+	float m_best_fitness;
+	t_genome m_alpha_genome;
+
+	vector<t_genome> m_genomes;
+
+	unique_ptr<NNTopology> m_pNNTopology;
+	vector<NNet> m_NNets;
+
+};

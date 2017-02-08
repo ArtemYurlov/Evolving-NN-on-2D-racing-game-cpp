@@ -43,13 +43,13 @@ bool Level::Init(Game* game)
 
 	vector<t_angLenWidth> ang_len_widths;
 
-	ang_len_widths.push_back(t_angLenWidth(0.f, 300.f, 100.f, 5));
+	ang_len_widths.push_back(t_angLenWidth(0.f, 1200.f, 150.f, 11));
 
-	ang_len_widths.push_back(t_angLenWidth(-45.f, 100.f, 100.f, 5));
-	ang_len_widths.push_back(t_angLenWidth(-45.f, 400.f, 71.f, 5));
+	ang_len_widths.push_back(t_angLenWidth(-45.f, 100.f, 100.f, 3));
+	ang_len_widths.push_back(t_angLenWidth(-45.f, 400.f, 71.f, 15));
 
 	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 71.f, 5));
-	ang_len_widths.push_back(t_angLenWidth(45.f, 500.f, 71.f * 0.64f, 5));
+	ang_len_widths.push_back(t_angLenWidth(45.f, 500.f, 71.f * 0.64f, 15));
 
 	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 71.f * 0.64f, 5));
 	ang_len_widths.push_back(t_angLenWidth(45.f, 400.f, 100.f, 5));
@@ -59,7 +59,7 @@ bool Level::Init(Game* game)
 
 
 
-	m_spawnPos = sf::Vector2f(0.f, -600.f);
+	m_spawnPos = sf::Vector2f(0.f, -40.f);
 	m_spawnAng = -90.f; //facing north
 
 	m_valid = true;

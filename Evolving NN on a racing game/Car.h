@@ -5,6 +5,7 @@
 #include <array>
 
 class Game;
+class NNet;
 
 class Car
 {
@@ -29,8 +30,8 @@ public:
 
 	bool isAlive() const;
 	bool isPlayer() const;
-	void addScore(); //increase score
-	unsigned getScore() const ; 
+	virtual void addScore(); //increase score
+	virtual float getScore() const ; 
 	
 
 protected:
@@ -95,13 +96,26 @@ public:
 	AICar();
 
 	bool Init(Game* game, const sf::Vector2f &spawnPos, const float &spawnAng) override;
+	bool Init(Game* game, const sf::Vector2f &spawnPos, const float &spawnAng, NNet* in_NN);
 	void EventHandle() override;
+	void Update(float dt) override;
 	void Draw() const override;
+
+	void addScore() override;
+	float getScore() const override;
 
 
 private:
 	void updateSensors();
 
-	array<t_sensor, 3> m_sensors;
+	float m_timeAlive;
+	float m_timeSinceCp;
+
+	float m_o_turn;
+	float m_o_acc;
+
+	NNet* m_NN;
+
+	array<t_sensor, 5> m_sensors;
 
 };

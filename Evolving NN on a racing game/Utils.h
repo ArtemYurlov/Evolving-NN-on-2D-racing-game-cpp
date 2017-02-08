@@ -1,7 +1,6 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
-#include <iostream>
 
 using namespace std;
 
@@ -221,4 +220,11 @@ inline bool CollisionDidPointCrossSeg(const sf::Vector2f &startPos, const sf::Ve
 inline sf::Vector2f CollisionSeqSeq(const t_line &l1, const t_line &l2)
 {
 	return CollisionSeqSeq(l1.p1, l1.p2, l2.p1, l2.p2);
+}
+
+inline float RRand(float min, float max) 
+// returns random float number in the range between min and max
+{
+	float rand1 = float(rand()) / float(RAND_MAX) - 0.5f; // a random float between -0.5 and 0.5
+	return (max + min)/2 + rand1*(max-min);
 }

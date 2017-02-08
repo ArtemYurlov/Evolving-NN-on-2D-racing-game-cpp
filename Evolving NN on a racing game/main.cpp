@@ -18,6 +18,8 @@ int main()
 
 	Clock deltaTime;
 	float dt = 0.000001f;
+
+	srand(time(nullptr));
 	
 	while (rWind.isOpen())
 	{

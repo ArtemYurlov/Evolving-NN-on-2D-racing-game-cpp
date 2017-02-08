@@ -2,8 +2,7 @@
 #include "Utils.h"
 #include "Game.h"
 #include <SFML/OpenGL.hpp>
-#include <iostream>
-
+#include "NNet.h"
 
 Car::Car()
 {
@@ -88,7 +87,6 @@ void Car::Revive()
 
 	updateCarBox(); // update the position of the cars box
 	this->Draw();
-	cout << "Revived! " << endl;
 }
 
 
@@ -142,9 +140,9 @@ void Car::addScore()
 	m_score++;
 }
 
-unsigned Car::getScore() const
+float Car::getScore() const
 {
-	return m_score;
+	return float(m_score);
 }
 
 
@@ -239,6 +237,10 @@ void PlayerCar::EventHandle()
 //.............. AI Car ................
 AICar::AICar() : Car()
 {
+	m_timeAlive = 0.f;
+	m_timeSinceCp = 0.f;
+	m_o_acc = 0.f;
+	m_o_turn = 0.f;
 	m_isPlayer = false;
 }
 
@@ -247,11 +249,22 @@ bool AICar::Init(Game* game, const sf::Vector2f& spawnPos, const float& spawnAng
 	if (!Car::Init(game, spawnPos, spawnAng))
 		return false;
 
-	//init sensors
-	
 	this->updateSensors();
 	return true;
 }
+
+bool AICar::Init(Game* game, const sf::Vector2f& spawnPos, const float& spawnAng, NNet* in_NN)
+{
+	m_NN = in_NN;
+	if (!Car::Init(game, spawnPos, spawnAng))
+		return false;
+
+	//init sensors
+
+	this->updateSensors();
+	return true;
+}
+
 
 
 //AI Car event handle
@@ -261,26 +274,24 @@ void AICar::updateSensors()
 {
 	// position and orientation
 	//sf::Vector2f front = (m_vertices[0] + m_vertices[1]) / 2.f;
-	sf::Vector2f line = sf::Vector2f(300.f, 0.f);
-	static const float angles[3] = { -360.f / 16.f , 0, 360.f / 16.f };
+	sf::Vector2f line = sf::Vector2f(500.f, 0.f);
+	static const float angles[5] = { -360.f/6.f, -360.f / 16.f , 0, 360.f / 16.f, 360.f / 6.f };
 
 	for (unsigned i = 0; i < m_sensors.size(); ++i)
 	{
 		m_sensors[i] = t_sensor(t_line(m_pos, RotateVec2f(line + m_pos, m_pos, m_ang + angles[i])), 1.f);
 	}
 
-	//cout << m_pos.x << " " << m_pos.y << endl;
 	// collsiion
 	vector<t_line> walls = game->getWalls();
-	for (auto sen : m_sensors)
-		for (auto wall : walls)
+	for (auto &sen : m_sensors)
+		for (auto &wall : walls)
 		{
 			float t = CollisionSeqSeq_getPropL1(sen.line.p1, sen.line.p2, wall.p1, wall.p2);
 
 			if (t != -1.f && t < sen.value)
 			{
 				sen.value = t;
-				cout << "sen ";
 			}
 		}
 }
@@ -288,6 +299,31 @@ void AICar::updateSensors()
 void AICar::EventHandle()
 {
 	updateSensors();
+
+	// get a move of the NN based on the sensors
+	vector<float> input;
+	vector<float> output;
+
+	for (unsigned i = 0; i < m_sensors.size(); ++i)
+		input.push_back(m_sensors[i].value);
+
+	m_NN->FeedForward(input, output);
+	
+	float acc = output[0];
+	float turn = output[1];
+	
+	if (isnan(acc)) acc = 0.f;
+	if (isnan(turn)) turn = 0.f;
+
+	turn = min<float>(360 / 64, max<float>(-360 / 64, turn));
+	m_o_turn = turn;
+	float speed = acc;
+	speed = min(25.f, max(-10.f, speed));
+	m_o_acc = speed;
+ 
+
+
+	/* temp controlls
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::W))
 		m_bAcc = 1;
 	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::S))
@@ -297,22 +333,71 @@ void AICar::EventHandle()
 		m_turn = -1;
 	else if (sf::Keyboard::isKeyPressed(sf::Keyboard::D))
 		m_turn = 1;
-	
+	*/
 }
+
+void AICar::Update(float dt)
+{
+	if (!m_alive)
+		return;
+	m_timeAlive += dt;
+
+	if (m_timeSinceCp > 10.f) //time out
+		this->Kill();
+	m_timeSinceCp += dt;
+
+	this->EventHandle();
+
+	m_ang += 10.f*m_o_turn*dt;
+
+	sf::Vector2f prevPos = m_pos;
+
+	m_pos.x += 10.f *m_o_acc * cosf(m_ang*PI / 180.f) * dt;
+	m_pos.y += 10.f*m_o_acc * sinf(m_ang*PI / 180.f) * dt;
+
+	m_trail.push_back((m_vertices[2] + m_vertices[3]) / 2.f);
+
+	sf::Vector2f prevFrontPos = (m_vertices[0] + m_vertices[1]) / 2.f;
+	updateCarBox(); //update the box
+
+	//update score
+	for (unsigned i = 0; i < m_checkPointsLeft.size(); ++i)
+		if (CollisionDidPointCrossSeg(prevFrontPos, (m_vertices[0] + m_vertices[1]) / 2.f
+			, m_checkPointsLeft[i].p1, m_checkPointsLeft[i].p2)) // if the front of the car cross a checkLine
+		{
+			this->addScore();
+			m_checkPointsLeft.erase(m_checkPointsLeft.begin() + i);
+		}
+}
+
 
 void AICar::Draw() const
 {
 	Car::Draw();
 
+	if (!m_alive)
+		return;
+
 	//draw sensors
 	for (auto &sen : m_sensors)
 	{
-		//cout << sen.value << " ";
 		sf::Vector2f coll = sen.line.p1 + (sen.line.p2 - sen.line.p1) * sen.value; // the point of collision between sensor and wall
 		sf::Color col = sen.value < 1 ? sf::Color::Yellow : sf::Color::White;
 
-		cout << "draw" << endl;
-		drawLine(game->getRenderWindow(), sen.line.p1, coll, col, col);
+		drawLine(game->getRenderWindow(), sen.line.p1, coll, sf::Color::White, col);
 		drawPoint(game->getRenderWindow(), coll, 10, col);
 	}
+}
+
+void AICar::addScore()
+{
+	m_score++;
+	m_timeSinceCp = 0.f;
+}
+
+float AICar::getScore() const
+{
+	//cout << m_score;
+	return float(m_score);
+
 }
