@@ -8,6 +8,7 @@ Car::Car()
 {
 	game = nullptr;
 	m_color = sf::Color::Blue;
+	m_runs = 0;
 
 	mm_w = 10.f;
 	mm_h = 20.f;
@@ -27,12 +28,14 @@ Car::Car()
 	m_timeDead = 0.f;
 	m_reviveIn = -1.f; // negative => do not revive
 	m_alive = false;
-	m_score = 0u;
+	m_m_wasDead = false;
+	m_score = 0.f;
 }
 
 PlayerCar::PlayerCar() :Car()
 {
 	m_isPlayer = true;
+	m_runs = INT_MAX;
 	m_reviveIn = 1.f; //revive the car 1 second after the crash
 }
 
@@ -43,9 +46,9 @@ bool Car::Init( Game* game, const sf::Vector2f& spawnPos, const float& spawnAng)
 	m_sp_pos = spawnPos;
 	m_sp_ang = spawnAng;
 
-	this->Revive(); // updates the car box and draws
+	m_l_walls = game->getLevel().getWalls();
 
-	return true;
+	return this->Revive(); // updates the car box and draws
 }
 
 void Car::Draw() const
@@ -70,8 +73,13 @@ void Car::Kill()
 	m_alive = false;
 }
 
-void Car::Revive()
+bool Car::Revive()
 {
+	if (m_runs == 0) //if no runs left dont revive
+		return false;
+
+	m_runs--;
+
 	m_pos = m_sp_pos;
 	m_ang = m_sp_ang;
 	m_vel = sf::Vector2f(0.f, 0.f);
@@ -82,11 +90,14 @@ void Car::Revive()
 	m_trail.clear();
 
 	m_alive = true;
+	m_m_wasDead = true;
 	
 	m_timeDead = 0.f;
 
 	updateCarBox(); // update the position of the cars box
 	this->Draw();
+
+	return true;
 }
 
 
@@ -145,6 +156,21 @@ float Car::getScore() const
 	return float(m_score);
 }
 
+void Car::addRun()
+{
+	m_runs++;
+}
+
+void Car::setRuns(const unsigned & runs)
+{
+	m_runs = runs;
+}
+
+unsigned Car::getRuns() const
+{
+	return m_runs;
+}
+
 
 void Car::EventClear()
 {
@@ -201,20 +227,41 @@ void Car::Update(float dt)
 	m_vel = dir * m_speed + m_acc * dt; //change velocity into the direction of the car
 	m_vel += -m_fric * m_vel * dt; // add friction
 
-	sf::Vector2f prevFrontPos = (m_vertices[0] + m_vertices[1]) / 2.f;
+	vector<sf::Vector2f> prevVerts = m_vertices;
 	updateCarBox(); //update the box
 
-	//update score
-	for (unsigned i = 0; i < m_checkPointsLeft.size(); ++i)
-		if (CollisionDidPointCrossSeg(prevFrontPos, (m_vertices[0] + m_vertices[1]) / 2.f
-			, m_checkPointsLeft[i].p1, m_checkPointsLeft[i].p2)) // if the front of the car cross a checkLine
-		{
-			this->addScore();
-			m_checkPointsLeft.erase(m_checkPointsLeft.begin() + i);
-		}
-		
-	//add trail
-	m_trail.push_back((m_vertices[2] + m_vertices[3]) / 2.f );//draw trail from the bottom -middle of the car
+	if (!m_m_wasDead)
+	{
+		// collision update
+		if (isAlive())
+			for (auto &wall : m_l_walls)
+				for (unsigned i = 0; i < m_vertices.size(); ++i)
+				{
+					if (CollisionDidPointCrossLine(prevVerts[i], m_vertices[i], wall.p1, wall.p2) &&
+						CollisionSeqSeq(prevVerts[i], m_vertices[i], wall.p1, wall.p2) != sf::Vector2f())
+					{
+						this->Kill();
+					}
+				}
+
+		//update 
+		sf::Vector2f prevFrontPos = (prevVerts[0] + prevVerts[1]) / 2.f;
+		sf::Vector2f curFrontPos = (m_vertices[0] + m_vertices[1]) / 2.f;
+		if (m_alive)
+		for (unsigned i = 0; i < m_checkPointsLeft.size(); ++i)
+			if (CollisionDidPointCrossLine(prevFrontPos, curFrontPos
+				, m_checkPointsLeft[i].p1, m_checkPointsLeft[i].p2)
+				&& CollisionSeqSeq(prevFrontPos, curFrontPos
+					, m_checkPointsLeft[i].p1, m_checkPointsLeft[i].p2) != sf::Vector2f()) // if the front of the car cross a checkLine
+			{
+				this->addScore();
+				m_checkPointsLeft.erase(m_checkPointsLeft.begin() + i);
+			}
+
+		//add trail
+		m_trail.push_back((m_vertices[2] + m_vertices[3]) / 2.f);//draw trail from the bottom -middle of the car
+	}
+	m_m_wasDead = false;
 
 	this->EventClear();
 }
@@ -237,11 +284,17 @@ void PlayerCar::EventHandle()
 //.............. AI Car ................
 AICar::AICar() : Car()
 {
+	m_NN = nullptr;
 	m_timeAlive = 0.f;
 	m_timeSinceCp = 0.f;
 	m_o_acc = 0.f;
 	m_o_turn = 0.f;
 	m_isPlayer = false;
+	m_runs = 1; // give the car 1 initial run at the spawn
+}
+AICar::~AICar()
+{
+	delete m_NN;
 }
 
 bool AICar::Init(Game* game, const sf::Vector2f& spawnPos, const float& spawnAng)
@@ -250,22 +303,15 @@ bool AICar::Init(Game* game, const sf::Vector2f& spawnPos, const float& spawnAng
 		return false;
 
 	this->updateSensors();
+
+	vector<unsigned> numHiddens;
+	for (unsigned i = m_sensors.size() - 1; i > 2; i--)
+		numHiddens.push_back(i);
+
+	m_NN = new NNet(*(new NNTopology(m_sensors.size(), numHiddens, 2))); // a convolutional looking topology
+
 	return true;
 }
-
-bool AICar::Init(Game* game, const sf::Vector2f& spawnPos, const float& spawnAng, NNet* in_NN)
-{
-	m_NN = in_NN;
-	if (!Car::Init(game, spawnPos, spawnAng))
-		return false;
-
-	//init sensors
-
-	this->updateSensors();
-	return true;
-}
-
-
 
 //AI Car event handle
 
@@ -342,7 +388,7 @@ void AICar::Update(float dt)
 		return;
 	m_timeAlive += dt;
 
-	if (m_timeSinceCp > 10.f) //time out
+	if (m_timeSinceCp > 100.f) //time out
 		this->Kill();
 	m_timeSinceCp += dt;
 
@@ -350,24 +396,46 @@ void AICar::Update(float dt)
 
 	m_ang += 10.f*m_o_turn*dt;
 
-	sf::Vector2f prevPos = m_pos;
-
 	m_pos.x += 10.f *m_o_acc * cosf(m_ang*PI / 180.f) * dt;
 	m_pos.y += 10.f*m_o_acc * sinf(m_ang*PI / 180.f) * dt;
 
-	m_trail.push_back((m_vertices[2] + m_vertices[3]) / 2.f);
-
-	sf::Vector2f prevFrontPos = (m_vertices[0] + m_vertices[1]) / 2.f;
+	vector<sf::Vector2f> prevVerts = m_vertices;
 	updateCarBox(); //update the box
 
-	//update score
-	for (unsigned i = 0; i < m_checkPointsLeft.size(); ++i)
-		if (CollisionDidPointCrossSeg(prevFrontPos, (m_vertices[0] + m_vertices[1]) / 2.f
-			, m_checkPointsLeft[i].p1, m_checkPointsLeft[i].p2)) // if the front of the car cross a checkLine
-		{
-			this->addScore();
-			m_checkPointsLeft.erase(m_checkPointsLeft.begin() + i);
-		}
+	if (!m_m_wasDead)
+	{
+		// collision update
+		if (isAlive())
+			for (auto &wall : m_l_walls)
+				for (unsigned i = 0; i < m_vertices.size(); ++i)
+				{
+					if (CollisionDidPointCrossLine(prevVerts[i], m_vertices[i], wall.p1, wall.p2) &&
+						CollisionSeqSeq(prevVerts[i], m_vertices[i], wall.p1, wall.p2) != sf::Vector2f())
+					{
+						this->Kill();
+					}
+				}
+
+		//update 
+		sf::Vector2f prevFrontPos = (prevVerts[0] + prevVerts[1]) / 2.f;
+		sf::Vector2f curFrontPos = (m_vertices[0] + m_vertices[1]) / 2.f;
+		if (m_alive)
+			for (unsigned i = 0; i < m_checkPointsLeft.size(); ++i)
+				if (CollisionDidPointCrossLine(prevFrontPos, curFrontPos
+					, m_checkPointsLeft[i].p1, m_checkPointsLeft[i].p2)
+					&& CollisionSeqSeq(prevFrontPos, curFrontPos
+						, m_checkPointsLeft[i].p1, m_checkPointsLeft[i].p2) != sf::Vector2f()) // if the front of the car cross a checkLine
+				{
+					this->addScore();
+					m_checkPointsLeft.erase(m_checkPointsLeft.begin() + i);
+				}
+
+		//add trail
+		m_trail.push_back((m_vertices[2] + m_vertices[3]) / 2.f);//draw trail from the bottom -middle of the car
+	}
+	m_m_wasDead = false;
+
+	this->EventClear();
 }
 
 
@@ -392,6 +460,7 @@ void AICar::Draw() const
 void AICar::addScore()
 {
 	m_score++;
+	m_score += 1.f / 10.f * m_timeSinceCp;
 	m_timeSinceCp = 0.f;
 }
 
@@ -400,4 +469,9 @@ float AICar::getScore() const
 	//cout << m_score;
 	return float(m_score);
 
+}
+
+NNet * AICar::getNNetPtr() const
+{
+	return m_NN;
 }

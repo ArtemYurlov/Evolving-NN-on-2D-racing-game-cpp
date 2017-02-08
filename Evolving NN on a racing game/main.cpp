@@ -8,10 +8,9 @@ using namespace sf;
 
 int main()
 {
-	
 	RenderWindow rWind(VideoMode(960, 1377), "Racing game", sf::Style::Titlebar | sf::Style::Close);
 
-	Game game;
+	Evolution_Controller game;
 	if (!game.Init(&rWind))
 		cerr << "Game init error!";
 
@@ -45,7 +44,7 @@ int main()
 		rWind.clear();
 		
 		//update
-		game.Update(dt);
+		game.Update(30.f*dt);
 
 		//draw
 		game.Render();

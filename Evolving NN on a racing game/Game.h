@@ -63,18 +63,18 @@ public:
 	bool Init(sf::RenderWindow* rWnd) override;
 	void Update(float dt) override;
 
-	
+	/* OLD 
 	void GenerateRandPopulation();
 
 	void BreedPopulation();
 	void CrossBreed(const t_genome &g1, const t_genome &g2, t_genome &baby1, t_genome &baby2);
 
-	void RateGenome(const unsigned &index, const float &score);
+	void RateGenome(const unsigned &index, const float &score); */
 
 
 
 private:
-	vector<t_genome> getBestGenomes(const unsigned num);
+	/*vector<t_genome> getBestGenomes(const unsigned num);
 	static void mutate(t_genome &gen);
 
 	unsigned m_curr_id;
@@ -82,7 +82,7 @@ private:
 	float m_best_fitness;
 	t_genome m_alpha_genome;
 
-	vector<t_genome> m_genomes;
+	vector<t_genome> m_genomes;*/
 
 	unique_ptr<NNTopology> m_pNNTopology;
 	vector<NNet> m_NNets;

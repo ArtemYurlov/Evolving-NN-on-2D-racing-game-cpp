@@ -201,7 +201,7 @@ inline float Orient2D (const sf::Vector2f &point, const sf::Vector2f &line_a, co
 	return (line_a.x - point.x) * (line_b.y - point.y) - (line_b.x - point.x) * (line_a.y - point.y);
 }
 
-inline bool CollisionDidPointCrossSeg(const sf::Vector2f &startPos, const sf::Vector2f &endPos, const sf::Vector2f lineA1, const sf::Vector2f lineA2)
+inline bool CollisionDidPointCrossLine(const sf::Vector2f &startPos, const sf::Vector2f &endPos, const sf::Vector2f lineA1, const sf::Vector2f lineA2)
 {
 	if (Orient2D(startPos, lineA1, lineA2)*Orient2D(endPos, lineA1, lineA2) < 0)
 		return true; //means the point crossed AB
@@ -209,7 +209,7 @@ inline bool CollisionDidPointCrossSeg(const sf::Vector2f &startPos, const sf::Ve
 	return false;
 }
 
-inline bool CollisionDidPointCrossSeg(const sf::Vector2f &startPos, const sf::Vector2f &endPos, const t_line &line)
+inline bool CollisionDidPointCrossLine(const sf::Vector2f &startPos, const sf::Vector2f &endPos, const t_line &line)
 {
 	if (Orient2D(startPos, line.p1, line.p2)*Orient2D(endPos, line.p1, line.p2) < 0)
 		return true; //means the point crossed AB
@@ -227,4 +227,33 @@ inline float RRand(float min, float max)
 {
 	float rand1 = float(rand()) / float(RAND_MAX) - 0.5f; // a random float between -0.5 and 0.5
 	return (max + min)/2 + rand1*(max-min);
+}
+
+inline vector<float> productMean_rand(vector<float> v1, vector<float> v2, float randomness)
+{
+	if (v1.size() != v2.size())
+		throw invalid_argument("invalid vector sizes");
+
+	vector<float> vMean;
+	for (unsigned i = 0; i < v1.size(); ++i)
+	{
+		float val;
+		if (sgn(v1[i]) == sgn(v2[i]))
+			val = float(sgn(v1[i]))*pow(v1[i] * v2[i], 0.5f + RRand(-randomness, randomness));
+		else
+			val = v1[i];
+		vMean.push_back(val);
+	}
+	return vMean;
+
+}
+
+inline vector<float> mutate(const vector<float> &v1, const float probOfMutation = 0.1f, const float degreeOfMuataion = 0.5f)
+{
+	auto _vec = v1;
+	for (auto &val : _vec)
+		if (RRand(0.f, 1.f) < probOfMutation)
+			val += RRand(-abs(degreeOfMuataion * val ), abs(degreeOfMuataion * val));
+
+	return _vec;
 }

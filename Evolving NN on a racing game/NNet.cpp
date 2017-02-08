@@ -46,8 +46,11 @@ NNet::NNet(const NNTopology & topology)
 
 			//set the number of connections / weights
 			n.setNumWeights(prevNumNeuron); // we want connections to all previous layer's neurons
-			for (auto &weight : n.getWeights())
-				weight = RRand(-1.f, 1.f); //initialize its weights with random float between -1, 1
+
+			vector<float> weights; weights.resize(prevNumNeuron);
+			for (auto &weight : weights)
+				weight = RRand(-1.f, 1.f);
+			n.setWeights(weights);// init weights with random float between -1, 1
 		}
 
 		prevNumNeuron = m_topology.getHiddens()[i]; //update the variable for the next iteration
@@ -56,9 +59,10 @@ NNet::NNet(const NNTopology & topology)
 	m_lOutput.resize(m_topology.getNumOutput()); // set the unmber of ourput neurons
 	for (Neuron &n : m_lOutput) //init the output layer
 	{
-		n.setNumWeights(prevNumNeuron); // connections from the last hidden layer
-		for (float &weight : n.getWeights()) // init weights TODO done by constructor
+		vector<float> weights; weights.resize(prevNumNeuron);
+		for (auto &weight : weights)
 			weight = RRand(-1.f, 1.f);
+		n.setWeights(weights);// init weights with random float between -1, 1
 	}
 }
 
@@ -152,9 +156,9 @@ void NNet::setAllWeights(const vector<float>& layerNeuronWeights)
 	}
 }
 
-void NNet::getAllWeights(vector<float> &allWeights) const
+vector<float> NNet::getAllWeights() const
 {
-	allWeights.clear();
+	vector<float> allWeights;
 	allWeights.reserve(m_topology.getNumConnections());
 
 	for (unsigned l = 0; l < m_lHiddens.size(); ++l)
@@ -172,5 +176,6 @@ void NNet::getAllWeights(vector<float> &allWeights) const
 		for (unsigned w = 0; w < weights.size(); ++w)
 			allWeights.push_back(weights[w]);
 	}
+	return allWeights;
 
 }

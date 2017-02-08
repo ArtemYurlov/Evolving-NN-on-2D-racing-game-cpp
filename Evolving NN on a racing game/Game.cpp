@@ -22,12 +22,12 @@ bool Game::Init(sf::RenderWindow* rWnd )
 	m_walls = m_level.getWalls(); //for future collision detection
 	m_cps = m_level.getCPs();
 	
-	//Create a car
+	/*Create a car
 	Car* pCar = new PlayerCar;
 	if (!pCar->Init(this, level.getSpawnPos(), level.getSpawnAng()))
 		return false;
-
-	m_cars.push_back(pCar);
+		
+	m_cars.push_back(pCar);*/
 	
 	return true;
 }
@@ -43,17 +43,7 @@ void Game::Update(float dt)
 	{		
 		// update car
 		car->Update(dt);
-
-		// collision update
-		vector<t_line> edges = car->getEdges();
-
-		for (auto &wall : m_walls)
-			for (auto &edge : edges)
-			{
-				if (CollisionSeqSeq(edge, wall) != sf::Vector2f(0.f, 0.f))
-					car->Kill();
-			}
-
+		
 	}
 }
 
@@ -145,7 +135,6 @@ sf::RenderWindow* Game::getRenderWindow() const
 
 
 Evolution_Controller::Evolution_Controller()
-	: m_curr_id(0), m_generation(1), m_best_fitness(0.0f)
 {
 	
 }
@@ -155,223 +144,81 @@ bool Evolution_Controller::Init(sf::RenderWindow * rWnd)
 	if (!Game::Init(rWnd))
 		return false;
 
-	this->GenerateRandPopulation();
+	unsigned _numCars = 100;
+	for (unsigned i = 0; i < _numCars; ++i)
+	{
+		AICar* pCar = new AICar();
+		pCar->Init(this, m_level.getSpawnPos(), m_level.getSpawnAng());
+		m_cars.push_back(pCar);
+	}
+
 	return true;
 }
 
 void Evolution_Controller::Update(float dt)
 {
-	
-
 	bool someAlive = false;
+	float bestScore = 0.f;
 	for (auto &car : m_cars)
 		if (car->isAlive())
 		{
+			if (car->getScore() > bestScore) bestScore = car->getScore();
 			someAlive = true;
 			break;
 		}
 
-	Game::Update(dt);
-	if (someAlive) 
-		return;
-
-	//reset
-	for (unsigned i = 0; i < m_cars.size(); ++i)
+	if (!someAlive) // then the generation's run is compleate
 	{
-		m_genomes[i].fitness = m_cars[i]->getScore();
-	}
+		//NNet* nN = static_cast<AICar*>(m_cars[0])->getNNetPtr();
 
-	this->BreedPopulation();
+		// Sort cars by score in decreasing order
+		sort(m_cars.begin(), m_cars.end(), [](Car* c1, Car* c2) {return c1->getScore() > c2->getScore(); });
 
-	for (unsigned i = 0; i < m_cars.size(); ++i) //reset cars
-	{
-		m_NNets[i].setAllWeights(m_genomes[i].weights);
-		m_cars[i]->Init(this, m_level.getSpawnPos(), m_level.getSpawnAng());
-	}
-	
-}
-
-void Evolution_Controller::GenerateRandPopulation()
-{
-	// init the topology
-	vector<unsigned> hiddenTopology;
-	hiddenTopology.push_back(4);
-	hiddenTopology.push_back(3);
-
-	m_pNNTopology = make_unique<NNTopology>(NNTopology(5, hiddenTopology, 2));
-
-	// init genomes
-	m_genomes.resize(100); //there will be that many cars per generation
-
-	for (unsigned i = 0; i < m_genomes.size(); ++i)
-	{
-		t_genome &genome = m_genomes[i];
-
-		genome.index = i;
-		genome.id = ++m_curr_id;
-		genome.fitness = 0.f;
-
-		genome.weights.resize(m_pNNTopology->getNumConnections());
-
-		for (auto &weight : genome.weights)
-			weight = RRand(-1.f, 1.f);
-	}
-
-	m_NNets.reserve(m_genomes.size());
-	for (unsigned i = 0; i < m_genomes.size(); ++i)
-	{
-		m_NNets.push_back(NNet(*m_pNNTopology));
-		m_NNets[i].setAllWeights(m_genomes[i].weights);
-		AICar* pCar = new AICar;
-		if (!pCar->Init(this, m_level.getSpawnPos(), m_level.getSpawnAng(), &m_NNets[i]))
-			return;
-
-		m_cars.push_back(pCar);
-	}
-
-	m_generation = 1;
-	m_best_fitness = 0.f;
-}
-
-void Evolution_Controller::BreedPopulation()
-{
-	if (m_genomes.empty())
-		return;
-
-	vector<t_genome> bestGenomes;
-	bestGenomes = getBestGenomes(10);
-
-	vector<t_genome> children;
-	children.reserve(m_genomes.size());
-
-	unsigned curIndex = 0;
-	t_genome bestDude;
-	if (bestGenomes[0].fitness > m_alpha_genome.fitness) //improvemnt over prev gens
-	{
-		m_alpha_genome = bestGenomes[0]; m_best_fitness = m_alpha_genome.fitness;
-		bestDude.fitness = 0.f; bestDude.id = m_alpha_genome.id; bestDude.fitness = m_alpha_genome.fitness;
-		bestDude.weights = m_alpha_genome.weights; bestDude.index = curIndex++;
-	}
-	else {
-		m_best_fitness = bestGenomes[0].fitness;
-		bestDude.fitness = 0.f; bestDude.id = bestGenomes[0].id; bestDude.fitness = bestGenomes[0].fitness;
-		bestDude.weights = bestGenomes[0].weights; bestDude.index = curIndex++;
-	}
-
-	//mutate(bestDude); //TODO change the t_genome into class with .mutate
-	children.push_back(bestDude);
-
-	for (unsigned i = 0; i < bestGenomes.size(); ++i)
-		for (unsigned j = i + 1; j < bestGenomes.size(); ++j)
+		// Give top 40% another run
+		unsigned iCar = 0;
+		for (; float(iCar) / float(m_cars.size()) < 0.2f; ++iCar)
 		{
-			t_genome baby1, baby2;
+			static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights( mutate(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights(),0.1f,iCar/10) );
+		}
+		// Remove/replace the bottom 60% with 50% schildren from the best and 10% randoms
+		{
+			// Get children of the best (in weights of their neural networks)
+			vector<vector<float>> children;
 
-			CrossBreed(bestGenomes[i], bestGenomes[j], baby1, baby2);
-			mutate(baby1);
-			mutate(baby2);
+			for (unsigned a = 0; a <= iCar; ++a)
+				for (unsigned b = a + 1; b <= iCar; ++b)
+					children.push_back(productMean_rand(static_cast<AICar*>(m_cars[a])->getNNetPtr()->getAllWeights()
+						, static_cast<AICar*>(m_cars[b])->getNNetPtr()->getAllWeights(), 0.05f));
 
-			baby1.index = curIndex++;
-			baby2.index = curIndex++;
+			// Now add the 10% randoms
+			for (; float(iCar) / float(m_cars.size()) < 0.5f; ++iCar)
+			{
+				vector<float> randoms; randoms.resize(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights().size());
+				for (auto &val : randoms)
+					val = RRand(-1.f, 1.f);
 
-			children.push_back(baby1);
-			children.push_back(baby2);
-
+				static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights(randoms);
+			}
+			
+			// Now fill-in the space with children
+			unsigned iChild = 0;
+			for (; iCar < m_cars.size(); ++iCar)
+				static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights(mutate(children[iChild++]));
+			
 		}
 
-	unsigned remainingPlaces = m_genomes.size() - children.size();
+		cout << "best score: " << m_cars[0]->getScore() << endl;
 
-	for (unsigned i = 0; i < remainingPlaces; ++i)
-	{
-		t_genome gen; gen.id = m_curr_id++;
-		gen.fitness = 0.f;
-		gen.weights.resize(m_pNNTopology->getNumConnections());
+		for (unsigned i = 0; i < m_cars.size(); ++i) //revive all cars
+		{
+			m_cars[i]->setRuns(1);
+			m_cars[i]->Revive();
+		}
 
-		for (auto &weight : gen.weights)
-			weight = RRand(-1.f, 1.f);
-
-		gen.index = curIndex++;
-		children.push_back(gen);
+		
 	}
 
-	m_genomes = children;
-	++m_generation;
-	cout << "New generation: " << m_generation << " Best Fit: " << m_best_fitness << " Cur fit: " << bestDude.fitness << endl;
-
-}
-
-void Evolution_Controller::CrossBreed(const t_genome & g1, const t_genome & g2, t_genome & baby1, t_genome & baby2)
-{
-	unsigned totalCons = g1.weights.size();
-	unsigned crossover = min(RRand(0.f, 1.f), 0.99f) * totalCons;
-
-	baby1.id = m_curr_id++;
-	baby1.weights.resize(totalCons);
-
-	baby2.id = m_curr_id;
-	baby2.weights.resize(totalCons);
-
-	for (unsigned i = 0; i < crossover; ++i)
-	{
-		baby1.weights[i] = g1.weights[i];
-		baby2.weights[i] = g2.weights[i];
-	}
-
-	for (unsigned i = crossover; i < totalCons; ++i)
-	{
-		baby1.weights[i] = g2.weights[i];
-		baby2.weights[i] = g1.weights[i];
-	}
-}
-
-void Evolution_Controller::RateGenome(const unsigned &index, const float &score)
-{
-	m_genomes[index].fitness = score;
-}
-
-
-
-void Evolution_Controller::mutate(t_genome& gen)
-{
-	for (auto &weight : gen.weights)
-		if (RRand(0.f,1.f) < 0.1f)//then mutate the weight
-			weight += RRand(-0.2f, 0.2f);
-}
-
-
-vector<Evolution_Controller::t_genome> Evolution_Controller::getBestGenomes(const unsigned num)
-{
-	unsigned _num = min(num, m_genomes.size());
-
-	vector<t_genome> best;
-	while(best.size() < _num)
-	{
-		float bestFitness = -1.f;
-		int bestIndex = -1;
-		for (unsigned i = 0; i < m_genomes.size(); ++i)
-			if (m_genomes[i].fitness > bestFitness)
-			{
-				bool isUsed = false;
-
-				for (unsigned j=0; j < best.size(); ++j)
-					if (best[j].id == m_genomes[i].id)
-					{
-						isUsed = true;
-						break;
-					}
-
-				if (isUsed)
-					continue;
-
-				bestIndex = i;
-				bestFitness = m_genomes[bestIndex].fitness;
-			}
-
-		if (bestIndex != -1)
-			best.push_back(m_genomes[bestIndex]);
-	}
-
-	//reverse(best.begin(), best.end());
-	return best; 
+	Game::Update(dt);
 }
 
 

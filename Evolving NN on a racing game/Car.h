@@ -20,7 +20,7 @@ public:
 	virtual void Draw() const;
 
 	void Kill();
-	void Revive();
+	bool Revive();
 
 	//get/set
 	sf::Vector2f getPos() const;
@@ -32,6 +32,9 @@ public:
 	bool isPlayer() const;
 	virtual void addScore(); //increase score
 	virtual float getScore() const ; 
+	void addRun();
+	void setRuns(const unsigned &runs);
+	unsigned getRuns() const;
 	
 
 protected:
@@ -41,13 +44,13 @@ protected:
 	float mm_h; //size of the car
 	float mm_w;
 
-	sf::Vector2f m_sp_pos;
+	sf::Vector2f m_sp_pos; //spawn position
 	float m_sp_ang;
 
 	Game* game; //pointer to the game instance
-	sf::Vector2f m_pos;
+	sf::Vector2f m_pos; // current pos
 	float m_ang; // angle facing eg 0 = east increasing cloackwise
-	sf::Vector2f m_vel;
+	sf::Vector2f m_vel; // current vel
 	float m_speed;
 	float m_maxAcc; //maximum acceleration of the car
 	sf::Vector2f m_acc; //acceleration vector
@@ -58,7 +61,10 @@ protected:
 	int m_turn; //is car turning [-1 - left 0 - no 1 - right]
 
 	bool m_isPlayer;
-	unsigned m_score; //score of a car
+
+	unsigned m_runs; //number of runs the car has after its death
+	float m_score; //score of a car
+
 	vector<sf::Vector2f> m_trail;
 	vector<t_line> m_checkPointsLeft; //checkpoints left to score for the car
 
@@ -68,6 +74,11 @@ protected:
 
 	sf::Color m_color; //color with witch the car would be drawn
 	vector <sf::Vector2f> m_vertices; //4 corners of the car define its box
+
+protected:
+	vector<t_line> m_l_walls;
+
+	bool m_m_wasDead;
 };
 
 class PlayerCar:public Car
@@ -94,9 +105,9 @@ public:
 
 public:
 	AICar();
+	~AICar();
 
 	bool Init(Game* game, const sf::Vector2f &spawnPos, const float &spawnAng) override;
-	bool Init(Game* game, const sf::Vector2f &spawnPos, const float &spawnAng, NNet* in_NN);
 	void EventHandle() override;
 	void Update(float dt) override;
 	void Draw() const override;
@@ -104,9 +115,13 @@ public:
 	void addScore() override;
 	float getScore() const override;
 
+	NNet* getNNetPtr() const;
+
 
 private:
 	void updateSensors();
+
+
 
 	float m_timeAlive;
 	float m_timeSinceCp;

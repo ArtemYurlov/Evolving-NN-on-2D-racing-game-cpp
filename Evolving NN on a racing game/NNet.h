@@ -87,7 +87,7 @@ public:
 	//vector<vector<vector<float>>> getAllWeights() const;
 
 	void setAllWeights(const vector<float> &layerNeuronWeights);
-	void getAllWeights(vector<float> &allWeights) const;
+	vector<float> getAllWeights() const;
 
 
 
