@@ -38,13 +38,19 @@ int main()
 				
 		}
 
+		float timeMulti = 1.f;
+		if (Keyboard::isKeyPressed(Keyboard::Key::Up))
+			timeMulti = 8.5f;
+		else if (Keyboard::isKeyPressed(Keyboard::Key::Down))
+			timeMulti = 1.5f;
+
 		game.EventHandle();
 
 		// clear
 		rWind.clear();
 		
 		//update
-		game.Update(30.f*dt);
+		game.Update(timeMulti * dt);
 
 		//draw
 		game.Render();

@@ -30,6 +30,9 @@ Car::Car()
 	m_alive = false;
 	m_m_wasDead = false;
 	m_score = 0.f;
+
+	m_timeAlive = 0.f;
+	m_distanceTraveled = 0.f;
 }
 
 PlayerCar::PlayerCar() :Car()
@@ -71,6 +74,7 @@ void Car::Draw() const
 void Car::Kill()
 {
 	m_alive = false;
+	m_score += m_score / ( (m_timeAlive + 1) * m_distanceTraveled + 1);
 }
 
 bool Car::Revive()
@@ -85,12 +89,15 @@ bool Car::Revive()
 	m_vel = sf::Vector2f(0.f, 0.f);
 	m_speed = 0;
 
-	m_score = 0u;
+	m_timeAlive = 0.f;
+	m_distanceTraveled = 0.f;
+
+	m_score = 0.f;
 	m_checkPointsLeft = game->getCPs(); // update checkpoints
 	m_trail.clear();
 
 	m_alive = true;
-	m_m_wasDead = true;
+	//m_m_wasDead = true;
 	
 	m_timeDead = 0.f;
 
@@ -149,6 +156,11 @@ bool Car::isPlayer() const
 void Car::addScore()
 {
 	m_score++;
+}
+
+void Car::addScore(const float scoreToAdd)
+{
+	m_score += scoreToAdd;
 }
 
 float Car::getScore() const
@@ -304,11 +316,7 @@ bool AICar::Init(Game* game, const sf::Vector2f& spawnPos, const float& spawnAng
 
 	this->updateSensors();
 
-	vector<unsigned> numHiddens;
-	for (unsigned i = m_sensors.size() - 1; i > 2; i--)
-		numHiddens.push_back(i);
-
-	m_NN = new NNet(*(new NNTopology(m_sensors.size(), numHiddens, 2))); // a convolutional looking topology
+	
 
 	return true;
 }
@@ -321,7 +329,7 @@ void AICar::updateSensors()
 	// position and orientation
 	//sf::Vector2f front = (m_vertices[0] + m_vertices[1]) / 2.f;
 	sf::Vector2f line = sf::Vector2f(500.f, 0.f);
-	static const float angles[5] = { -360.f/6.f, -360.f / 16.f , 0, 360.f / 16.f, 360.f / 6.f };
+	static const float angles[9] = { -360.f/6.f, -360.f/10.f, -360.f/24.f -360.f / 36.f , 0, 360.f / 36.f, 360.f/24.f, 360.f/10.f, 360.f / 6.f };
 
 	for (unsigned i = 0; i < m_sensors.size(); ++i)
 	{
@@ -353,8 +361,9 @@ void AICar::EventHandle()
 	for (unsigned i = 0; i < m_sensors.size(); ++i)
 		input.push_back(m_sensors[i].value);
 
-	m_NN->FeedForward(input, output);
+	//output = m_NN->FeedForward(input);
 	
+
 	float acc = output[0];
 	float turn = output[1];
 	
@@ -388,22 +397,25 @@ void AICar::Update(float dt)
 		return;
 	m_timeAlive += dt;
 
-	if (m_timeSinceCp > 100.f) //time out
+	if (m_timeSinceCp > 10.f) //time out
 		this->Kill();
 	m_timeSinceCp += dt;
 
-	this->EventHandle();
+	//this->EventHandle();
 
-	m_ang += 10.f*m_o_turn*dt;
+	m_ang += 100.f*m_o_turn*dt;
 
-	m_pos.x += 10.f *m_o_acc * cosf(m_ang*PI / 180.f) * dt;
-	m_pos.y += 10.f*m_o_acc * sinf(m_ang*PI / 180.f) * dt;
+	sf::Vector2f prevPos = m_pos;
 
-	vector<sf::Vector2f> prevVerts = m_vertices;
+	m_pos.x += 100.f *m_o_acc * cosf(m_ang*PI / 180.f) * dt;
+	m_pos.y += 100.f*m_o_acc * sinf(m_ang*PI / 180.f) * dt;
+
+	m_distanceTraveled += Norm(m_pos - prevPos);
+
+	vector<sf::Vector2f> prevVerts = m_vertices; // save prevPos for collision detection
 	updateCarBox(); //update the box
 
-	if (!m_m_wasDead)
-	{
+	
 		// collision update
 		if (isAlive())
 			for (auto &wall : m_l_walls)
@@ -416,7 +428,7 @@ void AICar::Update(float dt)
 					}
 				}
 
-		//update 
+		//score
 		sf::Vector2f prevFrontPos = (prevVerts[0] + prevVerts[1]) / 2.f;
 		sf::Vector2f curFrontPos = (m_vertices[0] + m_vertices[1]) / 2.f;
 		if (m_alive)
@@ -429,11 +441,15 @@ void AICar::Update(float dt)
 					this->addScore();
 					m_checkPointsLeft.erase(m_checkPointsLeft.begin() + i);
 				}
+		if (m_checkPointsLeft.size() == 0) //level compleate
+		{
+			Car::addScore(game->getScoreForCompleation());
+			game->setScoreForCompleation(game->getScoreForCompleation() / 2.f);
+			this->Kill();
+		}
 
 		//add trail
 		m_trail.push_back((m_vertices[2] + m_vertices[3]) / 2.f);//draw trail from the bottom -middle of the car
-	}
-	m_m_wasDead = false;
 
 	this->EventClear();
 }
@@ -460,7 +476,6 @@ void AICar::Draw() const
 void AICar::addScore()
 {
 	m_score++;
-	m_score += 1.f / 10.f * m_timeSinceCp;
 	m_timeSinceCp = 0.f;
 }
 
@@ -469,6 +484,21 @@ float AICar::getScore() const
 	//cout << m_score;
 	return float(m_score);
 
+}
+
+vector<float> AICar::getSensors()
+{
+	vector<float> vals;
+	for (unsigned i = 0; i < m_sensors.size(); ++i)
+		vals.push_back(m_sensors[i].value);
+
+	return vals;
+}
+
+void AICar::setControls(float speed, float turn)
+{
+	m_o_acc = speed;
+	m_o_turn = turn;
 }
 
 NNet * AICar::getNNetPtr() const

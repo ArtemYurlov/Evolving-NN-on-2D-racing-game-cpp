@@ -1,10 +1,12 @@
 #include "Game.h"
 #include <iostream>
-#include "NNet.h"
+
 
 Game::Game()
 {
 	m_rWnd = nullptr;
+	m_scoreForCompleation = 0.f;
+	m_sp_scoreForCompleation = 0.f;
 }
 
 bool Game::Init(sf::RenderWindow* rWnd )
@@ -21,13 +23,16 @@ bool Game::Init(sf::RenderWindow* rWnd )
 	m_level = level;
 	m_walls = m_level.getWalls(); //for future collision detection
 	m_cps = m_level.getCPs();
+
+	m_sp_scoreForCompleation = 100.f;
+	m_scoreForCompleation = m_sp_scoreForCompleation;
 	
-	/*Create a car
-	Car* pCar = new PlayerCar;
-	if (!pCar->Init(this, level.getSpawnPos(), level.getSpawnAng()))
-		return false;
-		
-	m_cars.push_back(pCar);*/
+	//Create a car
+	//Car* pCar = new PlayerCar;
+	//if (!pCar->Init(this, level.getSpawnPos(), level.getSpawnAng()))
+	//	return false;
+	//	
+	//m_cars.push_back(pCar);
 	
 	return true;
 }
@@ -147,9 +152,12 @@ bool Evolution_Controller::Init(sf::RenderWindow * rWnd)
 	unsigned _numCars = 100;
 	for (unsigned i = 0; i < _numCars; ++i)
 	{
-		AICar* pCar = new AICar();
-		pCar->Init(this, m_level.getSpawnPos(), m_level.getSpawnAng());
-		m_cars.push_back(pCar);
+		AICar* car = new AICar;
+		car->Init(this, m_level.getSpawnPos(), m_level.getSpawnAng());
+
+		Replicator* rep = new Replicator();
+		rep->Init(this, car);
+		m_replicators.push_back(rep);
 	}
 
 	return true;
@@ -157,68 +165,70 @@ bool Evolution_Controller::Init(sf::RenderWindow * rWnd)
 
 void Evolution_Controller::Update(float dt)
 {
+	for (auto &rep : m_replicators)
+		rep->Update(dt);
+
+
 	bool someAlive = false;
-	float bestScore = 0.f;
-	for (auto &car : m_cars)
-		if (car->isAlive())
+	for (unsigned i = 0; i < m_replicators.size(); ++i)
+		if (m_replicators[i]->isAlive())
 		{
-			if (car->getScore() > bestScore) bestScore = car->getScore();
 			someAlive = true;
 			break;
 		}
 
 	if (!someAlive) // then the generation's run is compleate
 	{
-		//NNet* nN = static_cast<AICar*>(m_cars[0])->getNNetPtr();
 
 		// Sort cars by score in decreasing order
-		sort(m_cars.begin(), m_cars.end(), [](Car* c1, Car* c2) {return c1->getScore() > c2->getScore(); });
+		sort(m_replicators.begin(), m_replicators.end(), 
+			[](Replicator* r1, Replicator* r2) {return r1->getFitness() > r2->getFitness(); });
 
-		// Give top 40% another run
-		unsigned iCar = 0;
-		for (; float(iCar) / float(m_cars.size()) < 0.2f; ++iCar)
+		// Let the top performers reproduce ( num = sqrt(n) + 1 )
+		vector<Replicator*> children; 
+		unsigned iRep = 0; //current replicator index
+		for (; float(iRep) <= sqrt(float(m_replicators.size())) + 1; ++iRep)
+			for (unsigned b = iRep + 1; b <= sqrt(float(m_replicators.size())) + 1; ++b)
+				children.push_back( m_replicators[iRep]->Reproduce(m_replicators[b]->getNNWeights()) );
+
+		// Remove/replace the bottom 60% with 50% children from the best and 10% randoms
 		{
-			static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights( mutate(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights(),0.1f,iCar/10) );
-		}
-		// Remove/replace the bottom 60% with 50% schildren from the best and 10% randoms
-		{
-			// Get children of the best (in weights of their neural networks)
-			vector<vector<float>> children;
-
-			for (unsigned a = 0; a <= iCar; ++a)
-				for (unsigned b = a + 1; b <= iCar; ++b)
-					children.push_back(productMean_rand(static_cast<AICar*>(m_cars[a])->getNNetPtr()->getAllWeights()
-						, static_cast<AICar*>(m_cars[b])->getNNetPtr()->getAllWeights(), 0.05f));
-
 			// Now add the 10% randoms
-			for (; float(iCar) / float(m_cars.size()) < 0.5f; ++iCar)
+			for (; float(iRep) / float(m_replicators.size()) < 0.25f; ++iRep)
 			{
-				vector<float> randoms; randoms.resize(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights().size());
-				for (auto &val : randoms)
-					val = RRand(-1.f, 1.f);
-
-				static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights(randoms);
+				m_replicators[iRep]->Mutate(1.f,1.f,true); //fully mutate
 			}
 			
 			// Now fill-in the space with children
 			unsigned iChild = 0;
-			for (; iCar < m_cars.size(); ++iCar)
-				static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights(mutate(children[iChild++]));
+			for (; iRep < m_replicators.size(); ++iRep)
+			{
+				m_replicators[iRep] = children[iChild++];
+			}
+
 			
 		}
 
-		cout << "best score: " << m_cars[0]->getScore() << endl;
+		cout << "best score: " << m_replicators[0]->getFitness() << endl;
 
-		for (unsigned i = 0; i < m_cars.size(); ++i) //revive all cars
+		for (unsigned i = 0; i < m_replicators.size(); ++i) //reasign and revive all cars
 		{
-			m_cars[i]->setRuns(1);
-			m_cars[i]->Revive();
+			m_replicators[i]->Revive();
 		}
+
+		m_scoreForCompleation = m_sp_scoreForCompleation;
 
 		
 	}
 
-	Game::Update(dt);
+}
+
+void Evolution_Controller::Render()
+{
+	Game::Render();
+
+	for (auto &rep : m_replicators)
+		rep->Draw();
 }
 
 

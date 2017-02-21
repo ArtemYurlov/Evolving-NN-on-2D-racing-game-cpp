@@ -43,20 +43,34 @@ bool Level::Init(Game* game)
 
 	vector<t_angLenWidth> ang_len_widths;
 
-	ang_len_widths.push_back(t_angLenWidth(0.f, 1200.f, 150.f, 11));
+	ang_len_widths.push_back(t_angLenWidth(0.f, 1200.f, 150.f, 10));
 
-	ang_len_widths.push_back(t_angLenWidth(-45.f, 100.f, 100.f, 3));
+	ang_len_widths.push_back(t_angLenWidth(-45.f, 100.f, 110.f, 3));
 	ang_len_widths.push_back(t_angLenWidth(-45.f, 400.f, 71.f, 15));
 
-	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 71.f, 5));
+	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 76.f, 5));
 	ang_len_widths.push_back(t_angLenWidth(45.f, 500.f, 71.f * 0.64f, 15));
 
 	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 71.f * 0.64f, 5));
 	ang_len_widths.push_back(t_angLenWidth(45.f, 400.f, 100.f, 5));
 
+	ang_len_widths.push_back(t_angLenWidth(-30.f, 200.f, 70.f, 5));
+	ang_len_widths.push_back(t_angLenWidth(-30.f, 40.f, 40.f, 3));
+	ang_len_widths.push_back(t_angLenWidth(-30.f, 30.f, 35.f, 2));
+
+	ang_len_widths.push_back(t_angLenWidth(40.f, 600.f, 40.f, 10));
+
+	ang_len_widths.push_back(t_angLenWidth(-40.f, 100.f, 35.f, 6));
+
+	ang_len_widths.push_back(t_angLenWidth(-45.f, 200.f, 25.f, 10));
+
+	ang_len_widths.push_back(t_angLenWidth(-45.f, 100.f, 16.f, 7));
+
+	//ang_len_widths.push_back(t_angLenWidth(60.f, 200.f, 30.f, 7));
 
 	LevelFromAngleLengthWidth(ang_len_widths, sf::Vector2f(0.f, 0.f), sf::Vector2f(0.f, -1.f));
 
+	m_checkLines.erase(m_checkLines.begin());
 
 
 	m_spawnPos = sf::Vector2f(0.f, -40.f);
@@ -178,9 +192,9 @@ vector<t_line> Level::getWalls()
 	wall.p2 = m_wall_2[0];
 	walls.push_back(wall);
 
-	wall.p1 = m_wall_1[m_wall_1.size() - 1];
+	wall.p1 = m_wall_1[m_wall_1.size() - 1]; //level compleate wall
 	wall.p2 = m_wall_2[m_wall_2.size() - 1];
-	walls.push_back(wall);
+	//walls.push_back(wall);
 
 	return walls;
 }

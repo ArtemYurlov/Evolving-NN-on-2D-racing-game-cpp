@@ -118,10 +118,17 @@ inline float Dot(const sf::Vector2f &v1, const sf::Vector2f &v2)
 	return (v1.x*v2.x) + (v1.y*v2.y);
 }
 
-template <typename T> int sgn(T val) {
+template <typename T> 
+constexpr const int& sgn(const T val) {
 	return (T(0) < val) - (val < T(0));
 }
 
+
+template <typename T>
+constexpr const T& Clamp(const T &in, const T& lo, const T& hi)
+{
+	return std::min(std::max(in, lo), hi);
+}
 
 //collisions
 
@@ -203,7 +210,7 @@ inline float Orient2D (const sf::Vector2f &point, const sf::Vector2f &line_a, co
 
 inline bool CollisionDidPointCrossLine(const sf::Vector2f &startPos, const sf::Vector2f &endPos, const sf::Vector2f lineA1, const sf::Vector2f lineA2)
 {
-	if (Orient2D(startPos, lineA1, lineA2)*Orient2D(endPos, lineA1, lineA2) < 0)
+	if (Orient2D(startPos, lineA1, lineA2)*Orient2D(endPos, lineA1, lineA2) <= 0)
 		return true; //means the point crossed AB
 
 	return false;
@@ -211,7 +218,7 @@ inline bool CollisionDidPointCrossLine(const sf::Vector2f &startPos, const sf::V
 
 inline bool CollisionDidPointCrossLine(const sf::Vector2f &startPos, const sf::Vector2f &endPos, const t_line &line)
 {
-	if (Orient2D(startPos, line.p1, line.p2)*Orient2D(endPos, line.p1, line.p2) < 0)
+	if (Orient2D(startPos, line.p1, line.p2)*Orient2D(endPos, line.p1, line.p2) <= 0)
 		return true; //means the point crossed AB
 
 	return false;
@@ -248,7 +255,7 @@ inline vector<float> productMean_rand(vector<float> v1, vector<float> v2, float 
 
 }
 
-inline vector<float> mutate(const vector<float> &v1, const float probOfMutation = 0.1f, const float degreeOfMuataion = 0.5f)
+inline vector<float> mutate(const vector<float> &v1, const float probOfMutation = 0.15f, const float degreeOfMuataion = 0.3f)
 {
 	auto _vec = v1;
 	for (auto &val : _vec)

@@ -24,12 +24,14 @@
     <ClCompile Include="Level.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="NNet.cpp" />
+    <ClCompile Include="Replicator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Car.h" />
     <ClInclude Include="Level.h" />
     <ClInclude Include="Game.h" />
     <ClInclude Include="NNet.h" />
+    <ClInclude Include="Replicator.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

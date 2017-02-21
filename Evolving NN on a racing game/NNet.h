@@ -76,11 +76,11 @@ private:
 class NNet
 {
 public:
-	NNet(const NNTopology &topology);
+	NNet(NNTopology &topology);
 	~NNet();
 
 	//methods
-	void FeedForward(const vector<float> &input, vector<float> &output) const;
+	vector<float> FeedForward(const vector<float> &input) const;
 
 	//get/set
 	//void setAllWeights(const vector<vector<vector<float>>> &layerNeuronWeights);
@@ -89,10 +89,11 @@ public:
 	void setAllWeights(const vector<float> &layerNeuronWeights);
 	vector<float> getAllWeights() const;
 
+	NNTopology* getTopology() const;
 
 
 private:
-	const NNTopology &m_topology;
+	NNTopology& m_topology;
 
 	Layer m_lInput;
 	vector<Layer> m_lHiddens;

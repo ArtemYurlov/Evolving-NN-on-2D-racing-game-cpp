@@ -31,6 +31,7 @@ public:
 	bool isAlive() const;
 	bool isPlayer() const;
 	virtual void addScore(); //increase score
+	void addScore(const float scoreToAdd);
 	virtual float getScore() const ; 
 	void addRun();
 	void setRuns(const unsigned &runs);
@@ -64,6 +65,9 @@ protected:
 
 	unsigned m_runs; //number of runs the car has after its death
 	float m_score; //score of a car
+
+	float m_timeAlive;
+	float m_distanceTraveled;
 
 	vector<sf::Vector2f> m_trail;
 	vector<t_line> m_checkPointsLeft; //checkpoints left to score for the car
@@ -115,15 +119,17 @@ public:
 	void addScore() override;
 	float getScore() const override;
 
+	vector<float> getSensors();
+	
+	void setControls(float speed, float turn);
+
 	NNet* getNNetPtr() const;
-
-
-private:
 	void updateSensors();
 
 
+private:
 
-	float m_timeAlive;
+
 	float m_timeSinceCp;
 
 	float m_o_turn;
@@ -131,6 +137,6 @@ private:
 
 	NNet* m_NN;
 
-	array<t_sensor, 5> m_sensors;
+	array<t_sensor, 9> m_sensors;
 
 };

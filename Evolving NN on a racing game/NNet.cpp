@@ -25,7 +25,7 @@ NNTopology::NNTopology(const unsigned int numInput, const vector<unsigned int>& 
 	m_numCons += prevNumNeurons * m_numOutput;
 }
 
-NNet::NNet(const NNTopology & topology)
+NNet::NNet(NNTopology & topology)
 	: m_topology(topology)
 // init the NNet
 {
@@ -72,10 +72,8 @@ NNet::~NNet()
 {
 }
 
-void NNet::FeedForward(const vector<float>& input, vector<float>& output) const
+vector<float> NNet::FeedForward(const vector<float>& input) const
 {
-	output.clear();
-
 	// neuron_out = sum( scaled input ), with scaled input = input * weight of the connection;
 	// so iterate over each layer saving the outputs in layerOutput
 	vector<float> layerInput = input;
@@ -98,37 +96,8 @@ void NNet::FeedForward(const vector<float>& input, vector<float>& output) const
 	for (unsigned i = 0; i < m_lOutput.size(); ++i) // let each neuron process the inputs and store them in layerOutut in order
 		layerOutput.push_back(m_lOutput[i].Process(layerInput));
 
-	output = layerOutput; //return the output
+	return layerOutput; //return the output
 }
-
-/*void NNet::setAllWeights(const vector<vector<vector<float>>> &layerNuronWeights)
-{
-	for (unsigned iL = 0; iL < m_lHiddens.size(); ++iL)
-		for (unsigned iN = 0; iN < m_lHiddens[iL].size(); ++iN)
-			m_lHiddens[iL][iN].setWeights(layerNuronWeights[iL][iN]);
-	for (unsigned iN = 0; iN < m_lOutput.size(); ++iN)
-		m_lOutput[iN].setWeights(layerNuronWeights.back()[iN]);
-}
-
-vector<vector<vector<float>>> NNet::getAllWeights() const
-{
-	vector<vector<vector<float>>> allWeights;
-	vector<vector<float>> levelWeights;
-	for (unsigned iL = 0; iL < m_lHiddens.size(); ++iL)
-	{
-		for (unsigned iN = 0; iN < m_lHiddens[iL].size(); ++iN)
-			levelWeights.push_back(m_lHiddens[iL][iN].getWeights());
-
-		allWeights.push_back(levelWeights);
-		levelWeights.clear();
-	}
-
-	for (unsigned iN = 0; iN < m_lOutput.size(); ++iN)
-		levelWeights.push_back(m_lOutput[iN].getWeights());
-	allWeights.push_back(levelWeights);
-
-	return allWeights;
-}*/
 
 void NNet::setAllWeights(const vector<float>& layerNeuronWeights)
 {
@@ -178,4 +147,10 @@ vector<float> NNet::getAllWeights() const
 	}
 	return allWeights;
 
+}
+
+
+NNTopology* NNet::getTopology() const
+{
+	return &m_topology;
 }
