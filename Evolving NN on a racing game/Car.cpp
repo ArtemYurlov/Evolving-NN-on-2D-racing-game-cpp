@@ -388,16 +388,16 @@ void AICar::Update(float dt)
 		return;
 	m_timeAlive += dt;
 
-	if (m_timeSinceCp > 100.f) //time out
+	if (m_timeSinceCp > 10.f) //time out
 		this->Kill();
 	m_timeSinceCp += dt;
 
 	this->EventHandle();
 
-	m_ang += 10.f*m_o_turn*dt;
+	m_ang += 100.f*m_o_turn*dt;
 
-	m_pos.x += 10.f *m_o_acc * cosf(m_ang*PI / 180.f) * dt;
-	m_pos.y += 10.f*m_o_acc * sinf(m_ang*PI / 180.f) * dt;
+	m_pos.x += 100.f *m_o_acc * cosf(m_ang*PI / 180.f) * dt;
+	m_pos.y += 100.f*m_o_acc * sinf(m_ang*PI / 180.f) * dt;
 
 	vector<sf::Vector2f> prevVerts = m_vertices;
 	updateCarBox(); //update the box

@@ -178,9 +178,9 @@ void Evolution_Controller::Update(float dt)
 		unsigned iCar = 0;
 		for (; float(iCar) / float(m_cars.size()) < 0.2f; ++iCar)
 		{
-			static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights( mutate(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights(),0.1f,iCar/10) );
+			static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights( mutate(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights(), float(iCar)/float(m_cars.size()), 0.2f) );
 		}
-		// Remove/replace the bottom 60% with 50% schildren from the best and 10% randoms
+		// 
 		{
 			// Get children of the best (in weights of their neural networks)
 			vector<vector<float>> children;
@@ -190,8 +190,8 @@ void Evolution_Controller::Update(float dt)
 					children.push_back(productMean_rand(static_cast<AICar*>(m_cars[a])->getNNetPtr()->getAllWeights()
 						, static_cast<AICar*>(m_cars[b])->getNNetPtr()->getAllWeights(), 0.05f));
 
-			// Now add the 10% randoms
-			for (; float(iCar) / float(m_cars.size()) < 0.5f; ++iCar)
+			// Now add the randoms
+			for (; float(iCar) / float(m_cars.size()) < 0.25f; ++iCar)
 			{
 				vector<float> randoms; randoms.resize(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights().size());
 				for (auto &val : randoms)
