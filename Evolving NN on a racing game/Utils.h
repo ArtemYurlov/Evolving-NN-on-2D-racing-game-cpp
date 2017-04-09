@@ -1,6 +1,8 @@
 #pragma once
 
 #include <SFML/Graphics.hpp>
+#include <math.h>
+#include <cstdlib>
 
 using namespace std;
 
@@ -257,3 +259,5 @@ inline vector<float> mutate(const vector<float> &v1, const float probOfMutation 
 
 	return _vec;
 }
+
+

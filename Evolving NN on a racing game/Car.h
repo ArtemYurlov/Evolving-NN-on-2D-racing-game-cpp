@@ -131,6 +131,6 @@ private:
 
 	NNet* m_NN;
 
-	array<t_sensor, 5> m_sensors;
+	array<t_sensor, 9> m_sensors;
 
 };

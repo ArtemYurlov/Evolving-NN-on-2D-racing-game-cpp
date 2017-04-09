@@ -16,14 +16,14 @@ bool Game::Init(sf::RenderWindow* rWnd )
 	//Load a level
 	Level level;
 	if (!level.Init(this))
-		return false;
+		return false; 
 
 	m_level = level;
 	m_walls = m_level.getWalls(); //for future collision detection
 	m_cps = m_level.getCPs();
 	
-	/*Create a car
-	Car* pCar = new PlayerCar;
+	//Create a car
+	/*Car* pCar = new PlayerCar;
 	if (!pCar->Init(this, level.getSpawnPos(), level.getSpawnAng()))
 		return false;
 		
@@ -178,7 +178,7 @@ void Evolution_Controller::Update(float dt)
 		unsigned iCar = 0;
 		for (; float(iCar) / float(m_cars.size()) < 0.2f; ++iCar)
 		{
-			static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights( mutate(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights(), float(iCar)/float(m_cars.size()), 0.2f) );
+			static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights( mutate(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights(), float(iCar-3)/m_cars.size(), 0.1f) );
 		}
 		// 
 		{

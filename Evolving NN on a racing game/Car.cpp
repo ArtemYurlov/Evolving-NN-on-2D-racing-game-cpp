@@ -321,7 +321,7 @@ void AICar::updateSensors()
 	// position and orientation
 	//sf::Vector2f front = (m_vertices[0] + m_vertices[1]) / 2.f;
 	sf::Vector2f line = sf::Vector2f(500.f, 0.f);
-	static const float angles[5] = { -360.f/6.f, -360.f / 16.f , 0, 360.f / 16.f, 360.f / 6.f };
+	static const float angles[9] = { 0.f,  -50.f, 50.f,  -25.f , 25.f,  -75.f, 75.f,  -12.5f, 12.5f  };
 
 	for (unsigned i = 0; i < m_sensors.size(); ++i)
 	{

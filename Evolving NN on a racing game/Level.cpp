@@ -54,6 +54,16 @@ bool Level::Init(Game* game)
 	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 71.f * 0.64f, 5));
 	ang_len_widths.push_back(t_angLenWidth(45.f, 400.f, 100.f, 5));
 
+	ang_len_widths.push_back(t_angLenWidth(0.f, 20.f, 100.f, 1));
+
+	ang_len_widths.push_back(t_angLenWidth(0.f, 400.f, 40.f, 5));
+
+	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 30.f, 5));
+	ang_len_widths.push_back(t_angLenWidth(45.f, 50.f, 20.f, 5));
+
+	ang_len_widths.push_back(t_angLenWidth(0.f, 400.f, 20.f, 20));
+
+
 
 	LevelFromAngleLengthWidth(ang_len_widths, sf::Vector2f(0.f, 0.f), sf::Vector2f(0.f, -1.f));
 
@@ -178,8 +188,9 @@ vector<t_line> Level::getWalls()
 	wall.p2 = m_wall_2[0];
 	walls.push_back(wall);
 
-	wall.p1 = m_wall_1[m_wall_1.size() - 1];
-	wall.p2 = m_wall_2[m_wall_2.size() - 1];
+	//last wall
+	/*wall.p1 = m_wall_1[m_wall_1.size() - 1];
+	wall.p2 = m_wall_2[m_wall_2.size() - 1];*/
 	walls.push_back(wall);
 
 	return walls;
