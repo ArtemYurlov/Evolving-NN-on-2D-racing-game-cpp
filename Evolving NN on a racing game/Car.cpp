@@ -388,7 +388,7 @@ void AICar::Update(float dt)
 		return;
 	m_timeAlive += dt;
 
-	if (m_timeSinceCp > 10.f) //time out
+	if (m_timeSinceCp > 1.f) //time out
 		this->Kill();
 	m_timeSinceCp += dt;
 
@@ -460,7 +460,7 @@ void AICar::Draw() const
 void AICar::addScore()
 {
 	m_score++;
-	m_score += 1.f / 10.f * m_timeSinceCp;
+	m_score += 1.f + 0.5f / (1.f + m_timeSinceCp);
 	m_timeSinceCp = 0.f;
 }
 

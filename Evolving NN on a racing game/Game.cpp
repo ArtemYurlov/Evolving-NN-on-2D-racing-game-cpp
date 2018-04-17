@@ -174,11 +174,13 @@ void Evolution_Controller::Update(float dt)
 		// Sort cars by score in decreasing order
 		sort(m_cars.begin(), m_cars.end(), [](Car* c1, Car* c2) {return c1->getScore() > c2->getScore(); });
 
-		// Give top 40% another run
+		// Give top 10% another run
 		unsigned iCar = 0;
-		for (; float(iCar) / float(m_cars.size()) < 0.2f; ++iCar)
-		{
-			static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights( mutate(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights(), float(iCar-3)/m_cars.size(), 0.1f) );
+		for (; float(iCar) / float(m_cars.size()) < 0.22f; ++iCar){
+			static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->setAllWeights( 
+				mutate(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights(),
+					(float(iCar) - 3) / float(m_cars.size()), 0.1f)
+			);
 		}
 		// 
 		{
@@ -186,12 +188,14 @@ void Evolution_Controller::Update(float dt)
 			vector<vector<float>> children;
 
 			for (unsigned a = 0; a <= iCar; ++a)
-				for (unsigned b = a + 1; b <= iCar; ++b)
-					children.push_back(productMean_rand(static_cast<AICar*>(m_cars[a])->getNNetPtr()->getAllWeights()
-						, static_cast<AICar*>(m_cars[b])->getNNetPtr()->getAllWeights(), 0.05f));
+				for (unsigned b = a+1; b <= iCar; ++b)
+					//children.push_back(productMean_rand(static_cast<AICar*>(m_cars[a])->getNNetPtr()->getAllWeights()
+						//, static_cast<AICar*>(m_cars[b])->getNNetPtr()->getAllWeights(), 0.05f));
+					children.push_back(x_coross_at(static_cast<AICar*>(m_cars[a])->getNNetPtr()->getAllWeights()
+						, static_cast<AICar*>(m_cars[b])->getNNetPtr()->getAllWeights(), 0.99f));
 
 			// Now add the randoms
-			for (; float(iCar) / float(m_cars.size()) < 0.25f; ++iCar)
+			for (; float(iCar) / float(m_cars.size()) < 0.1f; ++iCar)
 			{
 				vector<float> randoms; randoms.resize(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights().size());
 				for (auto &val : randoms)
@@ -214,10 +218,11 @@ void Evolution_Controller::Update(float dt)
 			m_cars[i]->setRuns(1);
 			m_cars[i]->Revive();
 		}
-
+		dt = 0.000001;
 		
 	}
 
+	if (dt > m_maxdt) dt = m_maxdt;
 	Game::Update(dt);
 }
 

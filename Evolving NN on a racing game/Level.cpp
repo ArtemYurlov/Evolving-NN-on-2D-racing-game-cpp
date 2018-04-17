@@ -69,7 +69,7 @@ bool Level::Init(Game* game)
 
 
 
-	m_spawnPos = sf::Vector2f(0.f, -40.f);
+	m_spawnPos = sf::Vector2f(0.f, -180.f);
 	m_spawnAng = -90.f; //facing north
 
 	m_valid = true;

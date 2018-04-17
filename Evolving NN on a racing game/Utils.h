@@ -250,9 +250,30 @@ inline vector<float> productMean_rand(vector<float> v1, vector<float> v2, float 
 
 }
 
-inline vector<float> mutate(const vector<float> &v1, const float probOfMutation = 0.1f, const float degreeOfMuataion = 0.5f)
+inline vector<float> x_coross_at(vector<float> v1, vector<float> v2, float at)
 {
-	auto _vec = v1;
+	if (v1.size() != v2.size())
+		throw invalid_argument("invalid vector sizes");
+
+	vector<float> vMean;
+	unsigned i = 0;
+	for (; i < float(v1.size())*at; ++i){
+	
+		vMean.push_back(v1[i]);
+	}
+
+	for (; i < v2.size(); ++i){
+
+		vMean.push_back(v2[i]);
+	}
+	return vMean;
+
+}
+
+
+inline vector<float> mutate(vector<float> &v1, const float probOfMutation = 0.15f, const float degreeOfMuataion = 0.5f)
+{
+	vector<float> _vec(v1);
 	for (auto &val : _vec)
 		if (RRand(0.f, 1.f) < probOfMutation)
 			val += RRand(-abs(degreeOfMuataion * val ), abs(degreeOfMuataion * val));

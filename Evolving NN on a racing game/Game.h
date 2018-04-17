@@ -87,4 +87,5 @@ private:
 	unique_ptr<NNTopology> m_pNNTopology;
 	vector<NNet> m_NNets;
 
+	float m_maxdt = 0.1;
 };
