@@ -192,10 +192,10 @@ void Evolution_Controller::Update(float dt)
 					//children.push_back(productMean_rand(static_cast<AICar*>(m_cars[a])->getNNetPtr()->getAllWeights()
 						//, static_cast<AICar*>(m_cars[b])->getNNetPtr()->getAllWeights(), 0.05f));
 					children.push_back(x_coross_at(static_cast<AICar*>(m_cars[a])->getNNetPtr()->getAllWeights()
-						, static_cast<AICar*>(m_cars[b])->getNNetPtr()->getAllWeights(), 0.99f));
+						, static_cast<AICar*>(m_cars[b])->getNNetPtr()->getAllWeights(), 0.98f));
 
 			// Now add the randoms
-			for (; float(iCar) / float(m_cars.size()) < 0.1f; ++iCar)
+			for (; float(iCar) / float(m_cars.size()) < 0.2f; ++iCar)
 			{
 				vector<float> randoms; randoms.resize(static_cast<AICar*>(m_cars[iCar])->getNNetPtr()->getAllWeights().size());
 				for (auto &val : randoms)
@@ -222,7 +222,8 @@ void Evolution_Controller::Update(float dt)
 		
 	}
 
-	if (dt > m_maxdt) dt = m_maxdt;
+	if (dt > m_maxdt) { dt = m_maxdt; }
+
 	Game::Update(dt);
 }
 

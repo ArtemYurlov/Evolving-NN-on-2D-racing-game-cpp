@@ -75,10 +75,10 @@ void Car::Kill()
 
 bool Car::Revive()
 {
-	if (m_runs == 0) //if no runs left dont revive
-		return false;
+	//if (m_runs == 0) //if no runs left dont revive
+	//	return false;
 
-	m_runs--;
+	//m_runs--;
 
 	m_pos = m_sp_pos;
 	m_ang = m_sp_ang;
@@ -88,6 +88,7 @@ bool Car::Revive()
 	m_score = 0u;
 	m_checkPointsLeft = game->getCPs(); // update checkpoints
 	m_trail.clear();
+	m_timeAlive = 0.f;
 
 	m_alive = true;
 	m_m_wasDead = true;
@@ -388,8 +389,10 @@ void AICar::Update(float dt)
 		return;
 	m_timeAlive += dt;
 
-	if (m_timeSinceCp > 1.f) //time out
+	if (m_timeSinceCp > 1.5f) { //time out
+		m_timeSinceCp = 0.f;
 		this->Kill();
+	}
 	m_timeSinceCp += dt;
 
 	this->EventHandle();
@@ -460,7 +463,7 @@ void AICar::Draw() const
 void AICar::addScore()
 {
 	m_score++;
-	m_score += 1.f + 0.5f / (1.f + m_timeSinceCp);
+	m_score += 1.f + 0.5f / (1.f + m_timeSinceCp*100);
 	m_timeSinceCp = 0.f;
 }
 

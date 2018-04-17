@@ -41,6 +41,11 @@ protected:
 	void EventClear(); // clear the events after the eventHandle
 	void updateCarBox(); // update the position of the cars box based on the cars position
 
+	bool m_alive; // is the car alive
+	sf::Vector2f m_pos; // current pos
+	float m_score; //score of a car
+	float m_timeDead; // local variable to keep track of time dead
+	
 	float mm_h; //size of the car
 	float mm_w;
 
@@ -48,7 +53,6 @@ protected:
 	float m_sp_ang;
 
 	Game* game; //pointer to the game instance
-	sf::Vector2f m_pos; // current pos
 	float m_ang; // angle facing eg 0 = east increasing cloackwise
 	sf::Vector2f m_vel; // current vel
 	float m_speed;
@@ -63,14 +67,11 @@ protected:
 	bool m_isPlayer;
 
 	unsigned m_runs; //number of runs the car has after its death
-	float m_score; //score of a car
 
 	vector<sf::Vector2f> m_trail;
 	vector<t_line> m_checkPointsLeft; //checkpoints left to score for the car
 
-	bool m_alive; // is the car alive
 	float m_reviveIn; // when to revive after the crash, set negative to disable
-	float m_timeDead; // local variable to keep track of time dead
 
 	sf::Color m_color; //color with witch the car would be drawn
 	vector <sf::Vector2f> m_vertices; //4 corners of the car define its box
@@ -78,6 +79,7 @@ protected:
 protected:
 	vector<t_line> m_l_walls;
 
+	float m_timeAlive;
 	bool m_m_wasDead;
 };
 
@@ -122,8 +124,6 @@ private:
 	void updateSensors();
 
 
-
-	float m_timeAlive;
 	float m_timeSinceCp;
 
 	float m_o_turn;
